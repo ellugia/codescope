@@ -1,0 +1,24 @@
+{
+  "git_binary": "git",
+  "default_repository": "main",
+  "repositories": {
+    "main": {
+      "root": "C:/path/to/repository",
+      "read_only": true
+    }
+  },
+  "optional_backends": {
+    "auto_discover": false,
+    "bindings": {}
+  },
+  "limits": {
+    "max_response_bytes": 65536,
+    "max_file_bytes": 524288,
+    "max_entries": 200,
+    "max_matches": 100,
+    "max_depth": 6,
+    "max_git_output_bytes": 131072,
+    "max_diff_bytes": 2097152,
+    "timeout_ms": 5000
+  }
+}

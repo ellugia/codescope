@@ -1,0 +1,26 @@
+# Publish only the bridge source, public documentation, and reviewed scripts.
+# Local profiles, evidence, fixtures, caches, tests, and vendored runtimes are
+# host-specific and must never enter a package by accident.
+config/managed/
+config/fixture.json
+characterization/
+deps/
+tests/
+.codex-remote-attachments/
+.npm-cache/
+*.log
+.env
+.env.*
+CON
+CONOUT$
+
+# Maintainer-only validation records.
+docs/characterization.md
+docs/connectivity.md
+docs/delegation.md
+docs/handoff.md
+docs/inventory.md
+docs/live-validation.md
+docs/optional-backends.md
+docs/results.md
+docs/security-review.md

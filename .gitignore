@@ -1,0 +1,31 @@
+node_modules/
+.npm-cache/
+config.json
+*.log
+deps/tunnel-client/run/
+deps/
+tests/.blackbox-runtime/
+tests/blackbox-config.json
+tests/measure-output.json
+.env
+.env.*
+CON
+CONOUT$
+
+# Local state, historical evidence, and host-specific runtime material.
+config/managed/
+config/fixture.json
+characterization/
+.codex-remote-attachments/
+
+# Maintainer-only validation records. Keep the local originals out of the
+# public checkout; publish a sanitized report separately if needed.
+docs/characterization.md
+docs/connectivity.md
+docs/delegation.md
+docs/handoff.md
+docs/inventory.md
+docs/live-validation.md
+docs/optional-backends.md
+docs/results.md
+docs/security-review.md
