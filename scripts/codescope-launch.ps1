@@ -9,13 +9,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
 $managedRoot = [IO.Path]::GetFullPath((Join-Path $workspace 'config\managed'))
 $managedProfile = Join-Path $managedRoot 'profile.json'
 $runtimeConfig = Join-Path $managedRoot 'runtime.bridge.json'
 $controlScript = Join-Path $PSScriptRoot 'codescope-control.ps1'
 $helperScript = Join-Path $PSScriptRoot 'tunnel-launcher-functions.ps1'
-$client = Join-Path $workspace 'deps\tunnel-client\v0.0.10-windows-amd64\tunnel-client.exe'
-$runDirectory = Join-Path $workspace 'deps\tunnel-client\run'
+$client = Resolve-CodeScopeTunnelClient -Workspace $workspace
+$runDirectory = Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace -ClientPath $client
 $profileDirectory = Join-Path $runDirectory 'profiles'
 $profileYaml = Join-Path $profileDirectory 'codescope.yaml'
 if (-not (Test-Path -LiteralPath $profileYaml -PathType Leaf) -and (Test-Path -LiteralPath $profileDirectory -PathType Container)) {

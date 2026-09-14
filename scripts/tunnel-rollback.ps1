@@ -6,8 +6,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
 if ([string]::IsNullOrWhiteSpace($PidFile)) {
-    $PidFile = Join-Path $workspace 'deps\tunnel-client\run\tunnel-client.pid'
+    $client = Resolve-CodeScopeTunnelClient -Workspace $workspace
+    $PidFile = Join-Path (Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace -ClientPath $client) 'tunnel-client.pid'
 }
 if (-not $ConfirmRollback) {
     Write-Output 'BLOCKED: rollback es explícito. Revisa el túnel/app y repite con -ConfirmRollback.'

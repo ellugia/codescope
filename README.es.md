@@ -59,6 +59,20 @@ node .\src\server.mjs
 
 El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en stdout. Los logs operativos van a stderr. El puente no inicia un túnel salvo que se use explícitamente un launcher separado.
 
+## Comando npm
+
+El paquete incluye una pequeña CLI de Node. Desde un checkout, o después de instalar el paquete en la carpeta de una aplicación local:
+
+```powershell
+npm install .
+npx codescope init
+npx codescope serve --config .\\config.json
+```
+
+`init` solo crea una plantilla local y se niega a sustituir un archivo existente salvo que se indique `--force`. `serve` inicia el mismo puente stdio que `node src/server.mjs`; no inicia ningún túnel.
+
+El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, evidencias de pruebas y contenido real de repositorios. El cliente opcional del túnel de Windows se instala aparte. Define `CODESCOPE_TUNNEL_CLIENT_PATH` con la ruta absoluta de su ejecutable, `CODESCOPE_TUNNEL_CLIENT_ROOT` con la carpeta de metadatos de la release verificada por separado y, opcionalmente, `CODESCOPE_TUNNEL_RUN_DIR` y `CODESCOPE_TUNNEL_SAMPLE_CONFIG` para el estado escribible del runtime y un perfil de ejemplo. Las credenciales siguen en el entorno del proceso o en el almacén de secretos del cliente del túnel.
+
 ## Acceso al repositorio y a la sesión
 
 Las rutas nunca llegan desde una llamada MCP. La llamada usa un alias, por ejemplo `main`, y la configuración resuelve ese alias a la raíz aprobada. Cuando `session_access.mode` es `session_select`, el cliente debe mostrar primero los alias disponibles con `bridge_access_status` y después seleccionar uno explícitamente con `bridge_access_select`. La sesión puede liberar un alias o restablecer todas las selecciones.
@@ -110,4 +124,4 @@ La TUI y el launcher de PowerShell son herramientas opcionales para Windows. Usa
 
 ## Estado del proyecto
 
-El repositorio está en preproducción. El puente local y sus comprobaciones de seguridad están implementados, pero para publicar hace falta un checkout limpio de release, elegir una licencia, fijar la URL pública del repositorio y decidir explícitamente qué fixtures internos, evidencias históricas, dependencias vendorizadas y perfiles locales gestionados quedan fuera de la distribución.
+El repositorio está en preproducción. La superficie pública de npm ya tiene una lista explícita de archivos y excluye perfiles locales, evidencias históricas, cachés, runtimes vendorizados, pruebas y contenido de repositorios. Antes de publicar hay que elegir la licencia del proyecto y ejecutar el canario extremo a extremo autenticado con un cliente de túnel externo.

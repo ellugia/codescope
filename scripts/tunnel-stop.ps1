@@ -7,7 +7,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$binary = [IO.Path]::GetFullPath((Join-Path $workspace 'deps\tunnel-client\v0.0.10-windows-amd64\tunnel-client.exe'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
+$binary = Resolve-CodeScopeTunnelClient -Workspace $workspace
 
 function Convert-RuntimeStartTimeToUtc($value) {
     if ($null -eq $value) { throw 'Runtime metadata start time is missing' }
@@ -24,7 +25,7 @@ function Convert-RuntimeStartTimeToUtc($value) {
     throw 'Runtime metadata start time has an unsupported type'
 }
 if ([string]::IsNullOrWhiteSpace($PidFile)) {
-    $PidFile = Join-Path $workspace 'deps\tunnel-client\run\tunnel-client.pid'
+    $PidFile = Join-Path (Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace -ClientPath $binary) 'tunnel-client.pid'
 }
 $pidPath = [IO.Path]::GetFullPath($PidFile)
 $runtimePath = Join-Path (Split-Path -Parent $pidPath) 'tunnel-client.runtime.json'

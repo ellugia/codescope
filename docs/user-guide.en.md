@@ -17,6 +17,15 @@ node .\src\server.mjs
 
 The server uses stdio. Connect it from an MCP client that can launch local stdio servers. Do not add a public HTTP listener to the bridge to work around a client limitation.
 
+The npm CLI provides the same flow without relying on a vendored runtime:
+
+```powershell
+npx codescope init
+npx codescope serve --config .\\config.json
+```
+
+The package does not contain a tunnel executable, a managed profile, or a local cache. If the optional Windows tunnel is needed, install that client separately and set `CODESCOPE_TUNNEL_CLIENT_PATH` and `CODESCOPE_TUNNEL_CLIENT_ROOT` before using the PowerShell launcher. `CODESCOPE_TUNNEL_RUN_DIR` can point to a writable per-user state directory.
+
 On Windows, the optional TUI can manage the local profile and the tunnel lifecycle. It does not change the read-only bridge policy. A tunnel should be started only after its client profile and runtime credential have been reviewed.
 
 ## 3. Select the repository for a conversation

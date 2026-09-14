@@ -13,6 +13,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
 
 function Resolve-CodeScopeExecutablePath {
     param(
@@ -41,7 +42,7 @@ if ([string]::IsNullOrWhiteSpace($PowerShellPath)) {
     $PowerShellPath = if ($PSVersionTable.PSVersion.Major -ge 7 -and (Test-Path -LiteralPath $currentPowerShell -PathType Leaf)) { $currentPowerShell } else { $null }
 }
 $pwsh = Resolve-CodeScopeExecutablePath -Name 'pwsh.exe' -Candidate $PowerShellPath
-$client = Join-Path $workspace 'deps\tunnel-client\v0.0.10-windows-amd64\tunnel-client.exe'
+$client = Resolve-CodeScopeTunnelClient -Workspace $workspace
 if ([string]::IsNullOrWhiteSpace($BridgeConfigPath)) { $BridgeConfigPath = $env:CODESCOPE_CONFIG }
 if ([string]::IsNullOrWhiteSpace($BridgeConfigPath)) { $BridgeConfigPath = Join-Path $workspace 'config.json' }
 if (-not [IO.Path]::IsPathFullyQualified($BridgeConfigPath)) { throw "Bridge configuration path must be absolute: $BridgeConfigPath" }
@@ -53,10 +54,10 @@ $startScript = Join-Path $PSScriptRoot 'tunnel-start.ps1'
 $stopScript = Join-Path $PSScriptRoot 'tunnel-stop.ps1'
 
 if ([string]::IsNullOrWhiteSpace($ProfileDir)) {
-    $ProfileDir = Join-Path $workspace 'deps\tunnel-client\run\profiles'
+    $ProfileDir = Join-Path (Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace -ClientPath $client) 'profiles'
 }
 if ([string]::IsNullOrWhiteSpace($RunDirectory)) {
-    $RunDirectory = Join-Path $workspace 'deps\tunnel-client\run'
+    $RunDirectory = Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace -ClientPath $client
 }
 $ProfileDir = [IO.Path]::GetFullPath($ProfileDir)
 $RunDirectory = [IO.Path]::GetFullPath($RunDirectory)

@@ -5,8 +5,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
 if ([string]::IsNullOrWhiteSpace($ClientRoot)) {
-    $ClientRoot = Join-Path $workspace 'deps\tunnel-client'
+    $client = Resolve-CodeScopeTunnelClient -Workspace $workspace
+    $ClientRoot = Resolve-CodeScopeTunnelRoot -Workspace $workspace -ClientPath $client
 }
 $root = [IO.Path]::GetFullPath($ClientRoot)
 $metadataPath = Join-Path $root 'release-metadata.json'

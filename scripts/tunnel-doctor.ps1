@@ -5,9 +5,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$binary = Join-Path $workspace 'deps\tunnel-client\v0.0.10-windows-amd64\tunnel-client.exe'
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
+$binary = Resolve-CodeScopeTunnelClient -Workspace $workspace
 if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
-    $ConfigPath = Join-Path $workspace 'deps\tunnel-client\tunnel-client.sample.yaml'
+    $ConfigPath = Resolve-CodeScopeTunnelSampleConfig -Workspace $workspace
+}
+if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
+    throw 'ConfigPath is required when the tunnel client is external.'
 }
 $config = [IO.Path]::GetFullPath($ConfigPath)
 

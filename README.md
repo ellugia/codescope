@@ -59,6 +59,20 @@ node .\src\server.mjs
 
 The process reads requests from stdio and writes protocol responses to stdout. Operational logs go to stderr. The bridge does not start a tunnel unless a separate launcher is explicitly used.
 
+## npm command
+
+The package includes a small Node CLI. From a checkout, or after installing the package in a local application directory:
+
+```powershell
+npm install .
+npx codescope init
+npx codescope serve --config .\\config.json
+```
+
+`init` only creates a local template and refuses to replace an existing file unless `--force` is supplied. `serve` starts the same stdio bridge as `node src/server.mjs`; it does not start a tunnel.
+
+The npm package deliberately excludes `deps/`, managed profiles, caches, test evidence, and real repository content. The optional Windows tunnel client is an external installation. Set `CODESCOPE_TUNNEL_CLIENT_PATH` to its absolute executable path, `CODESCOPE_TUNNEL_CLIENT_ROOT` to the separately verified release metadata directory, and optionally `CODESCOPE_TUNNEL_RUN_DIR` and `CODESCOPE_TUNNEL_SAMPLE_CONFIG` for writable runtime state and a sample profile. Credentials remain in the process environment or the tunnel client’s secret store.
+
 ## Repository and session access
 
 Repository paths never come from an MCP call. The call supplies an alias such as `main`; the configuration resolves that alias to the approved root. When `session_access.mode` is `session_select`, the client must first show the available aliases with `bridge_access_status` and then explicitly select the alias with `bridge_access_select`. A session can release one alias or reset all selections.
@@ -110,4 +124,4 @@ The PowerShell TUI and launcher are optional Windows tooling. They use paths rel
 
 ## Project status
 
-The repository is in preproduction. The local bridge and its security checks are implemented, but a public release still requires a clean release checkout, a chosen license, a public repository URL, and an explicit decision about which internal fixtures, historical evidence, vendored dependencies, and managed local profiles are excluded from distribution.
+The repository is in preproduction. The public npm surface now has an explicit file allowlist and excludes local profiles, historical evidence, caches, vendored runtimes, tests, and repository content. Before publishing, choose the project license and run the authenticated tunnel end-to-end canary with an external tunnel client.

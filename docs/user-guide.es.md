@@ -17,6 +17,15 @@ node .\src\server.mjs
 
 El servidor usa stdio. Conéctalo desde un cliente MCP que pueda arrancar servidores stdio locales. No añadas un listener HTTP público para solucionar una limitación del cliente.
 
+La CLI de npm ofrece el mismo flujo sin depender de un runtime vendorizado:
+
+```powershell
+npx codescope init
+npx codescope serve --config .\\config.json
+```
+
+El paquete no contiene un ejecutable del túnel, un perfil gestionado ni una caché local. Si hace falta el túnel opcional de Windows, instala ese cliente aparte y define `CODESCOPE_TUNNEL_CLIENT_PATH` y `CODESCOPE_TUNNEL_CLIENT_ROOT` antes de usar el launcher de PowerShell. `CODESCOPE_TUNNEL_RUN_DIR` puede apuntar a una carpeta de estado escribible del usuario.
+
 En Windows, la TUI opcional puede gestionar el perfil local y el ciclo de vida del túnel. No cambia la política de solo lectura del puente. El túnel solo debe iniciarse después de revisar su perfil y la credencial de runtime.
 
 ## 3. Seleccionar el repositorio de una conversación

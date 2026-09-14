@@ -9,6 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+. (Join-Path $PSScriptRoot 'tunnel-runtime.ps1')
 if (-not $Start) {
     Write-Output 'BLOCKED: no se inicia ningún proceso por defecto. Revisa el perfil y repite con -Start cuando exista autorización.'
     exit 2
@@ -22,7 +23,7 @@ if ([string]::IsNullOrWhiteSpace($env:CODESCOPE_CONFIG)) {
     exit 2
 }
 if ([string]::IsNullOrWhiteSpace($RunDirectory)) {
-    $RunDirectory = Join-Path $workspace 'deps\tunnel-client\run'
+    $RunDirectory = Resolve-CodeScopeTunnelRunDirectory -Workspace $workspace
 }
 
 function Resolve-CodeScopeExecutablePath {
@@ -44,7 +45,7 @@ function Resolve-CodeScopeExecutablePath {
     return [IO.Path]::GetFullPath($resolved)
 }
 
-$binary = Join-Path $workspace 'deps\tunnel-client\v0.0.10-windows-amd64\tunnel-client.exe'
+$binary = Resolve-CodeScopeTunnelClient -Workspace $workspace
 $config = [IO.Path]::GetFullPath($ConfigPath)
 $bridgeConfig = [IO.Path]::GetFullPath($env:CODESCOPE_CONFIG)
 $run = [IO.Path]::GetFullPath($RunDirectory)
@@ -55,11 +56,11 @@ $gitDirectory = [IO.Path]::GetFullPath((Split-Path -Parent $gitPath))
 $pidFile = Join-Path $run 'tunnel-client.pid'
 $runtimeFile = Join-Path $run 'tunnel-client.runtime.json'
 $healthFile = Join-Path $run 'health.url'
-$sampleConfig = [IO.Path]::GetFullPath((Join-Path $workspace 'deps\tunnel-client\tunnel-client.sample.yaml'))
+$sampleConfig = Resolve-CodeScopeTunnelSampleConfig -Workspace $workspace
 
 if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { throw "Portable tunnel-client not found: $binary" }
 if (-not (Test-Path -LiteralPath $config -PathType Leaf)) { throw "Config not found: $config" }
-if ($config -eq $sampleConfig) {
+if ($null -ne $sampleConfig -and $config -eq $sampleConfig) {
     Write-Output 'BLOCKED: no se arranca el sample; copia el YAML a una ruta privada y usa -ConfigPath.'
     exit 2
 }
