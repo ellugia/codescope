@@ -1,6 +1,6 @@
 # CodeScope
 
-CodeScope te ayuda a aprovechar las conversaciones de ChatGPT y las sesiones de Codex que ya tienes para entender código que permanece en tu propio ordenador. Lo instalas una vez, eliges los repositorios que quieres poner a disposición y haces preguntas en lenguaje natural sobre archivos, historial de Git, estructura y diseño. Tu código sigue siendo local y de solo lectura mientras aprovechas la cuota de uso de ChatGPT y Codex que tengas disponible en tu plan para explorar, revisar y mejorar tus proyectos.
+CodeScope te ayuda a usar una conversación normal de ChatGPT o un proyecto de ChatGPT para entender código que permanece en tu propio ordenador. Lo instalas una vez, eliges los repositorios que quieres poner a disposición y haces preguntas en lenguaje natural sobre archivos, historial de Git, estructura y diseño. El flujo está pensado para consumir la cuota de esa conversación normal de ChatGPT durante el análisis, en lugar de la cuota de ChatGPT Work o Codex. CodeScope solo aporta contexto acotado y de solo lectura de los repositorios que selecciones.
 
 Tanto si estás entrando en un código que no conoces, siguiendo el origen de un error, revisando un cambio o decidiendo cuál es el siguiente trabajo, CodeScope da a la conversación una ventana segura a los repositorios que has elegido sin pedirte que los subas ni conceder permisos de escritura.
 
