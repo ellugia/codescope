@@ -30,6 +30,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure black-box bridge
+        shell: node {0}
+        run: |
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const root = process.cwd();
+          const values = {
+            BRIDGE_COMMAND: process.execPath,
+            BRIDGE_ARGS_JSON: JSON.stringify([path.join(root, "tests", "blackbox-bridge-wrapper.mjs")]),
+            BRIDGE_CWD: root,
+            BRIDGE_SERVER_PATH: path.join(root, "src", "server.mjs"),
+          };
+          const contents = `${Object.entries(values).map(([key, value]) => `${key}=${value}`).join("\n")}\n`;
+          fs.appendFileSync(process.env.GITHUB_ENV, contents, "utf8");
+
       - name: Run self-check
         run: node scripts/self-check.mjs
 
