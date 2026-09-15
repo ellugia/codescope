@@ -49,6 +49,11 @@ uses the installed Node executable and the absolute path of this local package,
 so Codex does not need the `codescope` command on the system `PATH`. It also
 preserves an existing `codescope` entry.
 
+Some npm security policies suppress package scripts or run them without an
+interactive terminal. In that case the package still installs normally; run
+the direct setup command below from the installation directory when you are
+ready to configure it.
+
 After installation, configure the ChatGPT project that will use the MCP. The
 package prints a reminder during `npm install`. With the normal local install,
 print the ready-to-copy instructions from the installation directory with:
@@ -170,4 +175,9 @@ The Node CLI and terminal UI are the supported local command surface on Windows,
 
 ## Project status
 
-The release scope is local-only. Before publishing, choose the project license, run `npm pack --dry-run`, and complete a local stdio canary on the supported operating systems. No tunnel or remote authentication is part of this release.
+The release scope is local-only. Before publishing, run `npm pack --dry-run` and complete a local stdio canary on the supported operating systems. No tunnel or remote authentication is part of this release.
+
+## License
+
+CodeScope is released under the [MIT License](LICENSE). You may use, modify,
+and redistribute it while retaining the copyright and license notice.

@@ -12,6 +12,10 @@ npm install codescope-bridge
 
 El instalador pregunta si quieres lanzar el setup guiado inmediatamente; si respondes que sí, crea la configuración del usuario y abre la TUI. Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El alias es el único selector de repositorio que aceptan las llamadas MCP. El puente rechaza una raíz o un proyecto enviados como ruta libre. Después de la TUI, el setup puede registrar CodeScope en Codex; nunca sustituye una entrada `codescope` existente.
 
+Algunas políticas de seguridad de npm bloquean los scripts de los paquetes o
+los ejecutan sin una terminal interactiva. En ese caso el paquete se instala
+con normalidad; usa la orden directa de setup con Node de la sección siguiente.
+
 Usa `--config <archivo>` o `CODESCOPE_CONFIG` si necesitas un archivo de configuración personalizado. Mantén ese archivo privado cuando contenga ajustes propios de tu máquina.
 
 La TUI puede desactivar un repositorio con `enabled: false` y conservar su entrada para volver a activarlo. El puente solo expone las entradas activas y siempre exige `read_only: true`.

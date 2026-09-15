@@ -49,6 +49,11 @@ usa el ejecutable de Node instalado y la ruta absoluta de este paquete local,
 por lo que Codex no necesita que `codescope` esté en el `PATH` del sistema.
 También conserva una entrada `codescope` existente.
 
+Algunas políticas de seguridad de npm bloquean los scripts de los paquetes o
+los ejecutan sin una terminal interactiva. En ese caso el paquete se instala
+con normalidad; ejecuta la orden directa de setup que aparece abajo desde la
+carpeta de instalación cuando quieras configurarlo.
+
 Después de instalarlo, configura el proyecto de ChatGPT que utilizará el MCP.
 El paquete muestra un recordatorio durante `npm install`. Con la instalación
 local normal, muestra las instrucciones listas para copiar desde la carpeta de
@@ -172,4 +177,10 @@ La CLI de Node y la TUI de terminal son la superficie local soportada en Windows
 
 ## Estado del proyecto
 
-El alcance de la release es únicamente local. Antes de publicar hay que elegir la licencia del proyecto, ejecutar `npm pack --dry-run` y completar un canario local por stdio en los sistemas operativos soportados. El túnel y la autenticación remota quedan fuera de esta release.
+El alcance de la release es únicamente local. Antes de publicar hay que ejecutar `npm pack --dry-run` y completar un canario local por stdio en los sistemas operativos soportados. El túnel y la autenticación remota quedan fuera de esta release.
+
+## Licencia
+
+CodeScope se distribuye bajo la [licencia MIT](LICENSE). Puedes usarlo,
+modificarlo y redistribuirlo siempre que conserves el aviso de copyright y la
+licencia.

@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": false,
   "description": "Use ChatGPT and Codex to understand selected local repositories through a read-only MCP bridge.",
+  "author": "ellugia",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ellugia/codescope.git"
@@ -12,6 +14,7 @@
     "codescope": "bin/codescope.mjs"
   },
   "files": [
+    "LICENSE",
     "README.md",
     "README.es.md",
     "bin/",

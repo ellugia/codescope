@@ -12,6 +12,8 @@ npm install codescope-bridge
 
 The installer asks whether to launch the guided setup immediately; answering yes creates the user configuration and opens the terminal UI. Add every repository with a short alias, its repository folder, and `read_only: true`. The alias is the only repository selector accepted by MCP calls. The bridge rejects a path or project supplied as a free-form root. After the TUI, setup can register CodeScope in Codex; it never replaces an existing `codescope` entry.
 
+Some npm security policies suppress package scripts or run them without an interactive terminal. In that case the package still installs normally; use the direct Node setup command from the next section.
+
 Use `--config <file>` or `CODESCOPE_CONFIG` when you need a custom configuration file. Keep that file private when it contains machine-specific settings.
 
 The terminal UI can disable a repository with `enabled: false` while retaining its entry for later reactivation. The bridge exposes only enabled entries and always requires `read_only: true`.
