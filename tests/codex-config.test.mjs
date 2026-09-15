@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { spawnFile } from "./test-process.mjs";
 import {
+  CODEX_CONFIG_LIMITS,
   discoverCodexRepositories,
   parseCodexProjectPaths,
   resolveCodexConfigPath,
@@ -86,6 +87,31 @@ test("accepts both project key quote styles and deduplicates paths", () => {
   ].join("\n");
 
   assert.deepEqual(parseCodexProjectPaths(contents), [repository]);
+});
+
+test("decodes Unicode paths and skips malformed or unsafe project sections", () => {
+  const repository = path.resolve(os.tmpdir(), "codescope-unicode-ñ");
+  const encoded = JSON.stringify(repository).replace("ñ", "\\u00f1");
+  const contents = [
+    `[projects.${encoded}]`,
+    `[projects."${repository.replaceAll("\\", "\\\\")}\\q"]`,
+    `[projects."${repository.replaceAll("\\", "\\\\")}\\u001b"]`,
+  ].join("\n");
+
+  assert.deepEqual(parseCodexProjectPaths(contents), [repository]);
+});
+
+test("bounds CODEX_HOME/config.toml before parsing it", async () => {
+  const root = await tempRoot();
+  try {
+    const codexHome = path.join(root, "codex-home");
+    await writeConfig(codexHome, "#".repeat(CODEX_CONFIG_LIMITS.maxBytes + 1));
+    const result = await discoverCodexRepositories({ environment: { CODEX_HOME: codexHome } });
+    assert.equal(result.error.code, "config_too_large");
+    assert.deepEqual(result.candidates, []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 function isolatedUserConfigEnvironment(root) {

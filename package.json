@@ -24,6 +24,8 @@
     "docs/user-guide.en.md",
     "docs/user-guide.es.md",
     "scripts/doctor.mjs",
+    "scripts/self-check.mjs",
+    "config/design-policy.json",
     "src/"
   ],
   "engines": {
@@ -32,7 +34,8 @@
   "scripts": {
     "start": "node src/server.mjs",
     "cli": "node bin/codescope.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "self-check": "node scripts/self-check.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

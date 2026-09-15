@@ -8,6 +8,10 @@ Por debajo, CodeScope es un puente MCP local y de solo lectura para inspeccionar
 
 [Read this in English](README.md) · [Guía de usuario](docs/user-guide.es.md) · [User guide](docs/user-guide.en.md)
 
+## Nota de desarrollo
+
+CodeScope se desarrolló principalmente con la asistencia de ChatGPT 5.6 Luna Max.
+
 ## Qué hace
 
 - relaciona alias cortos con raíces absolutas locales;
@@ -28,17 +32,39 @@ El puente no es un servidor de sistema de archivos general, no ofrece una API de
 
 ## Inicio rápido
 
-Instala el paquete en la carpeta del proyecto actual:
+Elige una de las dos formas de instalación. Cada comando aparece en su propio
+bloque para poder copiarlo de forma independiente.
+
+### Opción A: instalación global
+
+Usa esta opción si quieres que el comando `codescope` funcione desde cualquier carpeta:
+
+```sh
+npm install --global @ellugia/codescope
+```
+
+Después, ejecuta la configuración guiada:
+
+```sh
+codescope setup
+```
+
+### Opción B: instalación local con npx
+
+Usa esta opción si no quieres instalar el paquete globalmente:
 
 ```sh
 npm install @ellugia/codescope
 ```
 
-Después de instalarlo, ejecuta la configuración guiada:
+Después, ejecuta la configuración mediante el paquete local:
 
 ```sh
-codescope setup
+npx codescope setup
 ```
+
+No uses las dos opciones para una misma instalación. Ambas crean la misma
+configuración por usuario.
 
 `setup` crea la configuración del usuario, abre la TUI para añadir repositorios
 e integraciones opcionales y ofrece registrar CodeScope en Codex. Guarda la
@@ -55,7 +81,9 @@ para seleccionar repositorios y mostrar el aviso de seguridad.
 El bridge sigue imponiendo el acceso por sí mismo: estas instrucciones mejoran
 la interacción, pero no son la barrera de seguridad.
 
-Edita el archivo cuya ruta muestra `init` y sustituye la raíz de ejemplo por una ruta absoluta de la máquina local. Todos los repositorios deben conservar `read_only` a `true`:
+Si usas `init` para una preparación basada solo en plantilla, edita el archivo
+cuya ruta muestra y sustituye la raíz de ejemplo por una ruta absoluta de la
+máquina local. Todos los repositorios deben conservar `read_only` a `true`:
 
 ```json
 {
@@ -90,7 +118,12 @@ El paquete incluye una pequeña CLI de Node. Desde un checkout:
 
 ```sh
 npm install .
-codescope setup
+```
+
+Después, ejecuta la CLI local con npx:
+
+```sh
+npx codescope setup
 ```
 
 `setup` crea la configuración del usuario cuando hace falta y abre la TUI guiada. `init` sigue disponible para una preparación basada en plantilla, y `serve` inicia el mismo puente stdio que `node src/server.mjs`. Pasa `--config ./config.json` si prefieres conservar la configuración junto al proyecto actual.

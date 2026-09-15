@@ -8,6 +8,10 @@ Under the hood, CodeScope is a local, read-only [Model Context Protocol (MCP)](h
 
 [Read this in Spanish](README.es.md) · [User guide](docs/user-guide.en.md) · [Guía de usuario](docs/user-guide.es.md)
 
+## Development note
+
+CodeScope was primarily developed with assistance from ChatGPT 5.6 Luna Max.
+
 ## What it does
 
 - maps short repository aliases to local absolute roots;
@@ -28,17 +32,39 @@ The bridge does not provide a general filesystem server, a Git write API, an arb
 
 ## Quick start
 
-Install the package in the current project directory:
+Choose one of the two installation routes below. Each command is in its own
+code block so it can be copied independently.
+
+### Option A: global install
+
+Use this route when you want the `codescope` command to work from any folder:
+
+```sh
+npm install --global @ellugia/codescope
+```
+
+Then run the guided setup:
+
+```sh
+codescope setup
+```
+
+### Option B: local install with npx
+
+Use this route when you do not want a global npm installation:
 
 ```sh
 npm install @ellugia/codescope
 ```
 
-After installation, run the guided setup:
+Then run the setup through the local package:
 
 ```sh
-codescope setup
+npx codescope setup
 ```
+
+Do not use both routes for the same installation. Both routes create the same
+per-user configuration.
 
 `setup` creates the user configuration, opens the terminal UI so you can add
 repositories and optional integrations, and offers to register CodeScope in
@@ -56,7 +82,9 @@ repository-selection and safety workflow.
 The bridge still enforces access on its own, so these instructions improve the
 interaction but are not the security boundary.
 
-Edit the configuration file path printed by `init` and replace the example root with an absolute path on the local machine. Every repository must keep `read_only` set to `true`:
+If you use `init` for template-only setup, edit the configuration file it prints
+and replace the example root with an absolute path on the local machine. Every
+repository must keep `read_only` set to `true`:
 
 ```json
 {
@@ -91,7 +119,12 @@ The package includes a small Node CLI. From a checkout:
 
 ```sh
 npm install .
-codescope setup
+```
+
+Then run the local CLI with npx:
+
+```sh
+npx codescope setup
 ```
 
 `setup` creates the user configuration when needed and opens the guided TUI. `init` remains available for scripted/template-only setup, and `serve` starts the same stdio bridge as `node src/server.mjs`. Pass `--config ./config.json` to keep the configuration beside the current project instead.

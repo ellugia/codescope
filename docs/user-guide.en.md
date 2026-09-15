@@ -4,10 +4,15 @@ This guide explains the supported public workflow.
 
 ## 1. Configure repositories
 
-Install `codescope` in the current project with npm:
+Choose one installation route. Each command is shown in its own code block so
+it can be copied independently.
+
+### Option A: global install
+
+Use this option when you want `codescope` to work from any folder:
 
 ```sh
-npm install @ellugia/codescope
+npm install --global @ellugia/codescope
 ```
 
 Then run the guided setup:
@@ -15,6 +20,23 @@ Then run the guided setup:
 ```sh
 codescope setup
 ```
+
+### Option B: local install with npx
+
+Use this option when you do not want a global npm installation:
+
+```sh
+npm install @ellugia/codescope
+```
+
+Then run setup through the local package:
+
+```sh
+npx codescope setup
+```
+
+Do not use both routes for the same installation. Both create the same
+per-user configuration.
 
 Add every repository with a short alias, its repository folder, and
 `read_only: true`. The alias is the only repository selector accepted by MCP
@@ -96,7 +118,7 @@ Ponytail instructions are advisory and optional. Their absence must not disable 
 
 ## 8. Troubleshooting
 
-- `config_missing`: run `codescope setup`. You can also pass `--config` or set `CODESCOPE_CONFIG`. An existing `config.json` in the current working directory is still supported for compatibility.
+- `config_missing`: run `codescope setup` after a global install, or `npx codescope setup` after a local install. You can also pass `--config` or set `CODESCOPE_CONFIG`. An existing `config.json` in the current working directory is still supported for compatibility.
 - `repository_access_required` or `session_required`: select a configured alias in the current session.
 - `path_denied` or `secret_denied`: the requested path or content is outside the public read policy.
 - `backend_unavailable`: the optional backend is absent, disabled, or not bound to this repository.

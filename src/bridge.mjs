@@ -41,12 +41,11 @@ const SECRET_CONTENT_PATTERNS = [
   /\bsk-[A-Za-z0-9_-]{10,}\b/u,
   /\b(?:ghp|github_pat|xox[baprs]|AIza)[A-Za-z0-9_-]{10,}\b/u,
   /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/u,
-  /(?:^|[\0\r\n])\s*[+-]?\s*(?:[A-Z][A-Z0-9_]*?(?:TOKEN|SECRET|PASSWORD|API[_-]?KEY)|TOKEN|SECRET|PASSWORD|API[_-]?KEY|ACCESS[_-]?TOKEN|client_secret)\s*[:=]\s*(?:"[^"\r\n]+"|'[^'\r\n]+'|\S+)/imu,
-  /(?:^|[\0\r\n,{[+\-\s])\s*["']?(?:token|secret|password|api[_-]?key|access[_-]?token|client_secret)["']?\s*[:=]\s*["']?(?:[^"',}\s]+|[^"\r\n]+)["']?/iu,
+  /(?:^|[\0\r\n,{\[?&;])\s*(?:[-+]\s*)?(?:export\s+)?["']?(?:[A-Z][A-Z0-9_-]*?(?:ACCESS[_-]?KEY(?:[_-]?ID)?|API[_-]?KEY|PRIVATE[_-]?(?:TOKEN|KEY)|SECRET[_-]?KEY|TOKEN|SECRET|PASSWORD|PASSWD|PASSPHRASE)|TOKEN|SECRET[_-]?KEY|SECRET|PASSWORD|PASSWD|PASSPHRASE|API[_-]?KEY|ACCESS[_-]?KEY(?:[_-]?ID)?|PRIVATE[_-]?(?:TOKEN|KEY)|CLIENT[_-]?SECRET)["']?\s*[:=]\s*(?:"[^"\r\n]+"|'[^'\r\n]+'|[^,\s}\]&;]+)/iu,
   /\bBearer\s+[A-Za-z0-9._~-]{20,}\b/iu,
 ];
 const CURSOR_KEY = crypto.randomBytes(32);
-const SESSION_HMAC_KEY = crypto.randomBytes(32);
+const PROCESS_SESSION_HMAC_KEY = crypto.randomBytes(32);
 const SESSION_FINGERPRINT_LENGTH = 16;
 
 const TOOL_DEFINITIONS = [
@@ -631,7 +630,7 @@ function safeBackendIdentifier(value, field) {
 
 function readSessionIdentity(meta) {
   const raw = meta && typeof meta === "object" ? meta["openai/session"] : undefined;
-  return typeof raw === "string" && raw.length >= 1 && raw.length <= 4_096 ? raw : null;
+  return typeof raw === "string" && raw.length >= 1 && raw.length <= 4_096 && !/[\0-\x1f\x7f]/u.test(raw) ? raw : null;
 }
 
 function normalizeBackendArgs(value, field) {
@@ -670,6 +669,18 @@ function sameConfigPath(left, right) {
   return process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
 }
 
+function deriveSessionHmacKey(config) {
+  const scope = JSON.stringify({
+    repositories: Object.entries(config.repositories)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([alias, entry]) => [alias, entry.configuredRoot]),
+    defaultRepository: config.defaultRepository,
+    sessionAccess: config.sessionAccess,
+    optionalBindings: Object.keys(config.optionalBackends?.bindings || {}).sort(),
+  });
+  return crypto.createHmac("sha256", PROCESS_SESSION_HMAC_KEY).update(scope, "utf8").digest();
+}
+
 export function createBridge(config) {
   return new Bridge(config);
 }
@@ -679,6 +690,7 @@ class Bridge {
     this.config = config;
     this.rootCache = new Map();
     this.sessionStates = new Map();
+    this.sessionHmacKey = deriveSessionHmacKey(config);
     this.inFlight = false;
     this.optionalBackends = createOptionalBackends(config, { hasSecret, verifyNoReparse });
   }
@@ -721,7 +733,7 @@ class Bridge {
       const input = validateArguments(name, args);
       if (sessionMode) {
         session = this.sessionContext(options?.meta);
-        contextSessionIdentity = session.identity;
+        contextSessionIdentity = session.fingerprint;
         if (REPOSITORY_TOOL_NAMES.has(name)) this.requireRepositoryAccess(input.repository, session);
         if (OPTIONAL_TOOL_NAMES.has(name)) {
           optionalRepository = this.resolveOptionalRepository(name, input.repository);
@@ -729,7 +741,10 @@ class Bridge {
         }
       } else if (OPTIONAL_TOOL_NAMES.has(name)) {
         optionalRepository = this.resolveOptionalRepository(name, input.repository);
-        if (name === "context_mode_search") contextSessionIdentity = readSessionIdentity(options?.meta);
+        if (name === "context_mode_search") {
+          const rawSession = readSessionIdentity(options?.meta);
+          contextSessionIdentity = rawSession ? this.sessionFingerprint(rawSession) : null;
+        }
       }
       const optionalInput = OPTIONAL_TOOL_NAMES.has(name) ? { ...input, repository: optionalRepository } : input;
       let result;
@@ -772,7 +787,7 @@ class Bridge {
     if (!raw) {
       throw new BridgeError("session_required", "An OpenAI session is required for bridge access.", this.securityDetails(null));
     }
-    const fingerprint = crypto.createHmac("sha256", SESSION_HMAC_KEY).update(raw, "utf8").digest("hex");
+    const fingerprint = this.sessionFingerprint(raw);
     const now = Date.now();
     for (const [key, candidate] of this.sessionStates) {
       if (candidate.expiresAt <= now) this.sessionStates.delete(key);
@@ -782,7 +797,11 @@ class Bridge {
       state = { authorized: new Set(), expiresAt: now + this.config.sessionAccess.ttlSeconds * 1_000 };
       this.sessionStates.set(fingerprint, state);
     }
-    return { fingerprint, identity: raw, state };
+    return { fingerprint, state };
+  }
+
+  sessionFingerprint(raw) {
+    return crypto.createHmac("sha256", this.sessionHmacKey).update(raw, "utf8").digest("hex");
   }
 
   securityDetails(session) {
@@ -1288,21 +1307,21 @@ class Bridge {
     const result = await this.runGit(repo, gitArgs, { maxBytes: Math.min(this.config.limits.maxGitOutputBytes, Math.max(1, this.config.limits.maxResponseBytes - 2_048)) });
     if (result.truncated) throw new BridgeError("output_limit", "Git history exceeded the response budget.");
     const fields = result.stdout.split("\0").filter((field) => field.length > 0);
+    const records = [];
+    for (let index = 0; index + 3 < fields.length; index += 4) records.push(fields.slice(index, index + 4));
     const commits = [];
     let redacted = 0;
     let parsedSecret = false;
-    for (let index = 0; index + 3 < fields.length; index += 4) {
-      const record = fields.slice(index, index + 4);
+    for (const [index, record] of records.entries()) {
       if (record.some((field) => containsSecret(field))) {
-        redacted += 1;
         parsedSecret = true;
+        if (index < maxCount) redacted += 1;
         continue;
       }
-      commits.push({ sha: record[0], authored_at: record[1], author: record[2], subject: record[3] });
+      if (index < maxCount) commits.push({ sha: record[0], authored_at: record[1], author: record[2], subject: record[3] });
     }
     if (containsSecret(result.stdout) && !parsedSecret) throw new BridgeError("secret_denied", "Git history contains an unclassified protected field.");
-    const truncated = commits.length > maxCount;
-    if (truncated) commits.pop();
+    const truncated = records.length > maxCount;
     const page = { repository: repo.alias, revision_sha: revision === "HEAD" ? await this.gitHead(repo) : revision, path: relative || null, commits, redacted, truncated, next_cursor: truncated ? String(skip + maxCount) : null };
     audit("git_log", repo.alias, relative || "", truncated ? "truncated" : "ok", commits.length);
     return page;
@@ -1492,6 +1511,7 @@ class Bridge {
     const prefix = ["-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", "-c", "core.preloadIndex=false", "-c", "core.quotePath=false", "-c", `safe.directory=${repo.root}`, "--no-optional-locks", "--literal-pathspecs"];
     const result = await runProcess(this.config.gitBinary, [...prefix, ...args], {
       cwd: repo.root,
+      env: { ...process.env, GIT_CEILING_DIRECTORIES: path.dirname(repo.root) },
       timeoutMs: this.config.limits.timeoutMs,
       maxBytes: options.maxBytes ?? this.config.limits.maxGitOutputBytes,
     });
@@ -1950,7 +1970,7 @@ async function runProcess(command, args, { cwd, env = process.env, timeoutMs, ma
 
 function sanitizedGitEnv(source) {
   const env = {};
-  for (const key of ["PATH", "PATHEXT", "SystemRoot", "WINDIR", "ComSpec", "COMSPEC", "TEMP", "TMP", "HOME", "USERPROFILE", "LANG", "LC_ALL"]) {
+  for (const key of ["PATH", "PATHEXT", "SystemRoot", "WINDIR", "ComSpec", "COMSPEC", "TEMP", "TMP", "HOME", "USERPROFILE", "LANG", "LC_ALL", "GIT_CEILING_DIRECTORIES"]) {
     const actual = Object.keys(source).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
     if (actual !== undefined) env[actual] = source[actual];
   }

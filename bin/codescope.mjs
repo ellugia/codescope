@@ -17,8 +17,22 @@ function localCliCommand(subcommand) {
 }
 
 function valueFor(flag, fallback = null) {
-  const index = args.indexOf(flag);
-  return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
+  const values = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === flag) {
+      const value = args[index + 1];
+      if (!value || value.startsWith("-")) throw new Error(`${flag} requires a path value.`);
+      values.push(value);
+      index += 1;
+    } else if (argument.startsWith(`${flag}=`)) {
+      const value = argument.slice(flag.length + 1);
+      if (!value) throw new Error(`${flag} requires a path value.`);
+      values.push(value);
+    }
+  }
+  if (values.length > 1) throw new Error(`${flag} may only be provided once.`);
+  return values[0] || fallback;
 }
 
 function usage() {
@@ -39,7 +53,7 @@ integrations stay in the local configuration; no tunnel is used.`);
 }
 
 function configPath() {
-  return resolveConfigPath({ explicitPath: valueFor("--config") });
+  return resolveConfigPath({ explicitPath: valueFor("--config"), env: process.env, cwd: process.cwd() });
 }
 
 async function init() {
@@ -73,9 +87,14 @@ async function codexRepositories() {
   const result = await discoverCodexRepositories();
   if (args.includes("--text")) {
     for (const candidate of result.candidates) console.log(candidate.path);
+    if (result.error) {
+      console.error(`Codex configuration was not accepted: ${result.error.code}.`);
+      process.exitCode = 2;
+    }
     return;
   }
   console.log(JSON.stringify(result, null, 2));
+  if (result.error) process.exitCode = 2;
 }
 
 async function instructions() {

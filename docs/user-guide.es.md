@@ -4,10 +4,15 @@ Esta guía explica el flujo público admitido.
 
 ## 1. Configurar repositorios
 
-Instala `codescope` en la carpeta del proyecto actual con npm:
+Elige una de las dos formas de instalación. Cada comando aparece en su propio
+bloque para poder copiarlo de forma independiente.
+
+### Opción A: instalación global
+
+Usa esta opción si quieres que `codescope` funcione desde cualquier carpeta:
 
 ```sh
-npm install @ellugia/codescope
+npm install --global @ellugia/codescope
 ```
 
 Después, ejecuta la configuración guiada:
@@ -15,6 +20,23 @@ Después, ejecuta la configuración guiada:
 ```sh
 codescope setup
 ```
+
+### Opción B: instalación local con npx
+
+Usa esta opción si no quieres instalar el paquete globalmente:
+
+```sh
+npm install @ellugia/codescope
+```
+
+Después, ejecuta el setup mediante el paquete local:
+
+```sh
+npx codescope setup
+```
+
+No uses las dos opciones para una misma instalación. Ambas crean la misma
+configuración por usuario.
 
 Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El
 alias es el único selector de repositorio que aceptan las llamadas MCP. El
@@ -96,7 +118,7 @@ Las instrucciones de Ponytail son advisory y opcionales. Su ausencia no debe des
 
 ## 8. Diagnóstico
 
-- `config_missing`: ejecuta `codescope setup`. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
+- `config_missing`: ejecuta `codescope setup` después de una instalación global o `npx codescope setup` después de una instalación local. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
 - `repository_access_required` o `session_required`: selecciona un alias configurado en la sesión actual.
 - `path_denied` o `secret_denied`: la ruta o el contenido pedido queda fuera de la política de lectura pública.
 - `backend_unavailable`: el backend opcional falta, está desactivado o no está vinculado a este repositorio.

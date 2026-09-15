@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import readline from "node:readline";
@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url";
 import { discoverCodexRepositories } from "./codex-config.mjs";
 
 const ALIAS_RE = /^[a-z][a-z0-9_-]{0,31}$/u;
+const CONTROL_RE = /[\p{Cc}\p{Cf}\u2028\u2029]/u;
 
 export function decodeKey(sequence) {
   if (sequence === "\u0003") return "ctrl-c";
   if (sequence === "\u0004") return "ctrl-d";
-  if (sequence === "\u001b[A" || sequence === "k") return "up";
-  if (sequence === "\u001b[B" || sequence === "j") return "down";
+  if (sequence === "\u001b[A" || sequence === "\u001bOA" || sequence === "k") return "up";
+  if (sequence === "\u001b[B" || sequence === "\u001bOB" || sequence === "j") return "down";
   if (sequence === "\r" || sequence === "\n" || sequence === " ") return "select";
   if (sequence === "q" || sequence === "Q" || sequence === "\u001b") return "back";
   return null;
@@ -19,10 +20,14 @@ export function decodeKey(sequence) {
 
 export async function readUiConfig(configPath) {
   try {
-    return JSON.parse(await readFile(configPath, "utf8"));
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    if (!config || typeof config !== "object" || Array.isArray(config)) throw new Error("Configuration must be a JSON object.");
+    return config;
   } catch (error) {
     if (error?.code === "ENOENT") throw new Error(`Configuration not found: ${configPath}. Run codescope init first.`);
-    throw new Error(`Configuration is not valid JSON: ${configPath}`);
+    if (error?.message === "Configuration must be a JSON object.") throw error;
+    if (error instanceof SyntaxError) throw new Error(`Configuration is not valid JSON: ${configPath}`);
+    throw new Error(`Configuration cannot be read: ${configPath}`);
   }
 }
 
@@ -30,8 +35,16 @@ export async function writeUiConfig(configPath, config) {
   const parent = path.dirname(configPath);
   await mkdir(parent, { recursive: true });
   const temporary = `${configPath}.${process.pid}.${Date.now()}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(config, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-  await rename(temporary, configPath);
+  const contents = `${JSON.stringify(config, null, 2)}\n`;
+  await writeFile(temporary, contents, { encoding: "utf8", mode: 0o600 });
+  try {
+    await rename(temporary, configPath);
+  } catch (error) {
+    if (!["EEXIST", "EPERM", "ENOTEMPTY"].includes(error?.code)) throw error;
+    await copyFile(temporary, configPath);
+  } finally {
+    await rm(temporary, { force: true }).catch(() => {});
+  }
 }
 
 function repositoriesOf(config) {
@@ -69,8 +82,10 @@ export function aliasForPath(root, repositories = {}) {
 }
 
 export async function addRepository(config, root, alias = null) {
-  const absolute = path.resolve(root);
-  if (!path.isAbsolute(absolute)) throw new Error("The repository folder must be an absolute path.");
+  const input = typeof root === "string" ? root.trim() : "";
+  if (!input || !path.isAbsolute(input)) throw new Error("The repository folder must be an absolute path.");
+  if (CONTROL_RE.test(input)) throw new Error("The repository folder contains unsafe control characters.");
+  const absolute = path.normalize(input);
   const info = await stat(absolute).catch(() => null);
   if (!info?.isDirectory()) throw new Error(`The folder does not exist or is not a directory: ${absolute}`);
   const repositories = repositoriesOf(config);
@@ -112,9 +127,18 @@ export function setAutoDiscovery(config, enabled) {
 
 export function setOptionalBackendEnabled(config, alias, backend, enabled) {
   const optional = optionalOf(config);
-  const binding = optional.bindings[alias];
+  const binding = optional.bindings[alias] || (alias === "fixture" ? optional : null);
   if (!binding || !binding[backend]) throw new Error(`No binding is configured for ${backend} in ${alias}.`);
   binding[backend].enabled = Boolean(enabled);
+}
+
+function optionalBindingsOf(config) {
+  const optional = optionalOf(config);
+  if (Object.keys(optional.bindings).length) return optional.bindings;
+  const legacy = {};
+  if (optional.codebase_memory) legacy.codebase_memory = optional.codebase_memory;
+  if (optional.context_mode) legacy.context_mode = optional.context_mode;
+  return Object.keys(legacy).length ? { fixture: legacy } : optional.bindings;
 }
 
 const MENU_FOOTER = "↑/↓ or j/k Move · Enter Select · Esc/q Back · Ctrl+C Quit";
@@ -144,7 +168,13 @@ function createRawMenu(title, entries, status, footer = MENU_FOOTER) {
   return new Promise((resolve) => {
     let selected = 0;
     const onKeypress = (str, key = {}) => {
-      const action = key.name === "up" ? "up" : key.name === "down" ? "down" : decodeKey(str);
+      const action = key.ctrl && key.name === "c"
+        ? "ctrl-c"
+        : key.name === "escape"
+          ? "back"
+          : key.name === "return" || key.name === "enter"
+            ? "select"
+            : key.name === "up" ? "up" : key.name === "down" ? "down" : decodeKey(str);
       if (action === "up" && entries.length) selected = (selected + entries.length - 1) % entries.length;
       else if (action === "down" && entries.length) selected = (selected + 1) % entries.length;
       else if (action === "back" || action === "ctrl-c" || action === "ctrl-d") finish(null);
@@ -264,7 +294,7 @@ export async function runTui({ configPath, packageRoot = path.resolve(path.dirna
   const optionalMenu = async () => {
     while (true) {
       const optional = optionalOf(config);
-      const bindings = Object.entries(optional.bindings).flatMap(([alias, binding]) => [
+      const bindings = Object.entries(optionalBindingsOf(config)).flatMap(([alias, binding]) => [
         binding.codebase_memory ? { label: `Codebase Memory · ${alias} · ${binding.codebase_memory.enabled === false ? "DISABLED" : "ACTIVE"}`, value: [alias, "codebase_memory"] } : null,
         binding.context_mode ? { label: `Context Mode · ${alias} · ${binding.context_mode.enabled === false ? "DISABLED" : "ACTIVE"}`, value: [alias, "context_mode"] } : null,
       ].filter(Boolean));

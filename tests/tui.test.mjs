@@ -10,6 +10,7 @@ import {
   decodeKey,
   removeRepository,
   renderMenu,
+  setOptionalBackendEnabled,
   setRepositoryEnabled,
   writeUiConfig,
 } from "../src/tui.mjs";
@@ -18,6 +19,8 @@ import { normalizeConfig } from "../src/bridge.mjs";
 test("TUI key decoder and alias generation stay deterministic", () => {
   assert.equal(decodeKey("\u001b[A"), "up");
   assert.equal(decodeKey("\u001b[B"), "down");
+  assert.equal(decodeKey("\u001bOA"), "up");
+  assert.equal(decodeKey("\u001bOB"), "down");
   assert.equal(decodeKey("k"), "up");
   assert.equal(decodeKey("j"), "down");
   assert.equal(decodeKey("\r"), "select");
@@ -59,6 +62,24 @@ test("TUI repository changes persist read-only entries and leave one active repo
   } };
   setRepositoryEnabled(defaultFallback, "first", false);
   assert.equal(defaultFallback.default_repository, "second");
+});
+
+test("TUI overwrites saved state on a second write and toggles legacy optional bindings", async () => {
+  const root = await mkdtemp(join(tmpdir(), "codescope-tui-state-"));
+  const configPath = join(root, "config.json");
+  const config = {
+    optional_backends: {
+      codebase_memory: { enabled: false },
+      context_mode: { enabled: false },
+    },
+  };
+  await writeUiConfig(configPath, { version: 1 });
+  await writeUiConfig(configPath, config);
+  assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")), config);
+  setOptionalBackendEnabled(config, "fixture", "codebase_memory", true);
+  setOptionalBackendEnabled(config, "fixture", "context_mode", true);
+  assert.equal(config.optional_backends.codebase_memory.enabled, true);
+  assert.equal(config.optional_backends.context_mode.enabled, true);
 });
 
 test("bridge rejects a configuration with every repository disabled", () => {
