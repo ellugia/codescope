@@ -34,7 +34,7 @@ jobs:
         run: npm run check
 
       - name: Run Node tests
-        run: node --test tests
+        run: node --test --test-concurrency=1 tests/*.test.mjs
 
       - name: Check package contents
         run: npm pack --dry-run --ignore-scripts

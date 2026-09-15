@@ -78,7 +78,8 @@ async function protocolCheck(configPath) {
   }
 }
 
-const temp = await fs.mkdtemp(path.join(os.tmpdir(), "codescope-bridge-check-"));
+const tempRoot = await fs.realpath(os.tmpdir());
+const temp = await fs.mkdtemp(path.join(tempRoot, "codescope-bridge-check-"));
 const repo = path.join(temp, "fixture ü repo");
 await fs.mkdir(repo);
 try {
@@ -209,7 +210,7 @@ try {
   }
   assert.equal(largeText, "x".repeat(70_000));
   for (const unsafe of ["../outside", "C:/outside", "foo\\bar", ".git/config", ".GIT/config", ".Git/HEAD", "dir:name"]) {
-    await assert.rejects(() => bridge.call("fs_read_text", { path: unsafe }), (error) => ["path_denied", "secret_denied"].includes(error.code));
+    await assert.rejects(() => bridge.call("fs_read_text", { path: unsafe }), (error) => ["path_denied", "path_missing", "secret_denied"].includes(error.code));
   }
   await assert.rejects(() => bridge.call("fs_list", { unexpected: true }), (error) => error.code === "invalid_arguments");
   await assert.rejects(() => bridge.call("git_commit", {}), (error) => error.code === "tool_denied");

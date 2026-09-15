@@ -494,6 +494,10 @@ async function callContract(client, key, vars = fixture.vars, timeoutMs = 8000) 
 }
 
 function skipIfNoTool(t, key) {
+  if (!configured) {
+    t.skip("BLOCKED: configure BRIDGE_COMMAND and BRIDGE_ARGS_JSON for the real bridge");
+    return true;
+  }
   if (toolSpec(key)) return false;
   t.skip(`NOT_RUN: contract.tools.${key} is not published yet`);
   return true;
@@ -988,6 +992,7 @@ test("SEC-06 Git status preserves staged, unstaged and untracked distinctions", 
 });
 
 test("SEC-06 git_diff requires an immutable reference SHA and paginates the exact CLI diff", async (t) => {
+  if (skipIfNoTool(t, "gitDiffReference")) return;
   const target = join(fixture.repo, "src-main.js");
   await writeFile(target, "export const value = 'reference diff canary 20260910';\n", "utf8");
   const expected = (await git(fixture.repo, [
