@@ -331,8 +331,12 @@ export function normalizeConfig(raw) {
       throw new BridgeError("config_invalid", "Repository roots must be absolute and configured locally.", { field: alias });
     }
     if (entry.read_only !== true) throw new BridgeError("config_invalid", "Every repository must explicitly set read_only=true.", { field: alias });
+    if (entry.enabled !== undefined && typeof entry.enabled !== "boolean") throw new BridgeError("config_invalid", "Repository enabled must be a boolean.", { field: `${alias}.enabled` });
+    if (entry.enabled === false) continue;
     repositories[alias] = { alias, configuredRoot: path.normalize(entry.root) };
   }
+
+  if (!Object.keys(repositories).length) throw new BridgeError("config_invalid", "At least one active repository is required.");
 
   const defaultRepository = raw.default_repository || Object.keys(repositories)[0];
   if (!repositories[defaultRepository]) throw new BridgeError("config_invalid", "default_repository must name a configured repository.");
@@ -407,7 +411,9 @@ function normalizeOptionalBackends(raw, repositories) {
       }
       const codebaseMemory = normalizeCodebaseMemory(entry.codebase_memory, repositories, alias, { legacy: legacyBinding, autoDiscoveryEnabled });
       const contextMode = normalizeContextMode(entry.context_mode, repositories, alias, { legacy: legacyBinding, autoDiscoveryEnabled });
-      if (!codebaseMemory && !contextMode) throw new BridgeError("config_invalid", "Optional backend binding must configure at least one backend.", { field: `optional_backends.bindings.${alias}` });
+      const disabledBinding = [entry.codebase_memory, entry.context_mode].filter(Boolean).length > 0
+        && [entry.codebase_memory, entry.context_mode].filter(Boolean).every((backend) => backend.enabled === false);
+      if (!codebaseMemory && !contextMode && !disabledBinding) throw new BridgeError("config_invalid", "Optional backend binding must configure at least one backend.", { field: `optional_backends.bindings.${alias}` });
       bindings[alias] = Object.freeze({ alias, readOnly: true, codebaseMemory, contextMode });
     }
   }
@@ -1449,7 +1455,6 @@ class Bridge {
       repositories,
       optional_integrations: this.optionalIntegrationStatus(),
       transport: "stdio",
-      external_tunnel: "NOT_RUN",
     };
   }
 

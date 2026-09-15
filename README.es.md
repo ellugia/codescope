@@ -12,7 +12,7 @@ CodeScope es un puente MCP local y de solo lectura para inspeccionar repositorio
 - mantiene explícitas la selección de repositorio y la sesión cuando se activa ese modo;
 - ofrece instrucciones de diseño advisory y versionadas;
 - puede añadir Codebase Memory o Context Mode solo cuando existe un vínculo por repositorio, de solo lectura, validado;
-- funciona por stdio local de forma predeterminada. El túnel es una capa opcional de despliegue.
+- funciona por stdio local. El modo local es el único transporte incluido en esta versión.
 
 El puente no es un servidor de sistema de archivos general, no ofrece una API de escritura de Git, no es un proxy MCP arbitrario y no abre un listener HTTP público por defecto.
 
@@ -24,11 +24,11 @@ El puente no es un servidor de sistema de archivos general, no ofrece una API de
 
 ## Inicio rápido
 
-Desde el directorio del proyecto:
+Desde un paquete npm instalado:
 
-```powershell
-npm ci
-Copy-Item config.example.json config.json
+```sh
+npm install codescope-bridge
+npx codescope init --config ./config.json
 ```
 
 Edita `config.json` y sustituye la raíz de ejemplo por una ruta absoluta de la máquina local. Todos los repositorios deben conservar `read_only` a `true`:
@@ -50,28 +50,40 @@ Edita `config.json` y sustituye la raíz de ejemplo por una ruta absoluta de la 
 }
 ```
 
+La TUI puede marcar un repositorio configurado con `enabled: false` sin borrarlo. Las entradas desactivadas permanecen en el archivo local, pero el puente no las expone. La UI también conserva y activa o desactiva bindings configuradas de solo lectura para Codebase Memory y Context Mode; no inventa rutas de backend.
+
 Arranca el servidor local por stdio:
 
-```powershell
-$env:CODESCOPE_CONFIG = (Resolve-Path .\config.json).Path
-node .\src\server.mjs
+```sh
+npx codescope serve --config ./config.json
 ```
 
-El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en stdout. Los logs operativos van a stderr. El puente no inicia un túnel salvo que se use explícitamente un launcher separado.
+El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en stdout. Los logs operativos van a stderr. El modo local no inicia un túnel, no abre un listener de red y no necesita una API key de OpenAI.
 
 ## Comando npm
 
 El paquete incluye una pequeña CLI de Node. Desde un checkout, o después de instalar el paquete en la carpeta de una aplicación local:
 
-```powershell
+```sh
 npm install .
-npx codescope init
-npx codescope serve --config .\\config.json
+npx codescope init --config ./config.json
+npx codescope serve --config ./config.json
 ```
 
-`init` solo crea una plantilla local y se niega a sustituir un archivo existente salvo que se indique `--force`. `serve` inicia el mismo puente stdio que `node src/server.mjs`; no inicia ningún túnel.
+`init` solo crea una plantilla local y se niega a sustituir un archivo existente salvo que se indique `--force`. `serve` inicia el mismo puente stdio que `node src/server.mjs`.
 
-El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, evidencias de pruebas y contenido real de repositorios. El cliente opcional del túnel de Windows se instala aparte. Define `CODESCOPE_TUNNEL_CLIENT_PATH` con la ruta absoluta de su ejecutable, `CODESCOPE_TUNNEL_CLIENT_ROOT` con la carpeta de metadatos de la release verificada por separado y, opcionalmente, `CODESCOPE_TUNNEL_RUN_DIR` y `CODESCOPE_TUNNEL_SAMPLE_CONFIG` para el estado escribible del runtime y un perfil de ejemplo. Las credenciales siguen en el entorno del proceso o en el almacén de secretos del cliente del túnel.
+Para la configuración y el diagnóstico locales interactivos, ejecuta `npx codescope ui --config ./config.json`. La UI gestiona la preparación local; `serve` sigue siendo el puente MCP por stdio.
+La UI también puede ejecutar `serve` en primer plano para una comprobación local; pulsa `Ctrl+C` para detenerlo. Normalmente el propio cliente MCP es quien arranca `serve`.
+
+El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, evidencias de pruebas, launchers de Windows y contenido real de repositorios.
+
+`codex-repositories` es una ayuda de importación para la configuración local:
+
+```sh
+npx codescope codex-repositories
+```
+
+Lee únicamente `CODEX_HOME/config.toml`. Si `CODEX_HOME` no está definido, comprueba `~/.codex/config.toml` en Linux y macOS, y el `.codex/config.toml` equivalente del directorio de usuario en Windows. Extrae las secciones `[projects.'...']` y `[projects."..."]` como candidatos. El usuario debe elegir qué candidatos copiar a la configuración propia de CodeScope; una entrada de proyecto de Codex nunca concede acceso por sí sola.
 
 ## Acceso al repositorio y a la sesión
 
@@ -105,23 +117,23 @@ Las instrucciones de Ponytail también son opcionales y solo se anuncian tras va
 - se bloquean o redactan `.git`, archivos de entorno, credenciales, claves privadas, certificados y contenido que coincida con secretos;
 - Git se ejecuta sin shell, prompts de terminal, helpers de diff ni convertidores de texto, y limita `safe.directory` a la raíz canónica seleccionada;
 - no se expone ninguna operación de escritura del repositorio;
-- si el despliegue usa un túnel, sus credenciales deben venir del entorno del proceso o del almacén de secretos del cliente, nunca de argumentos MCP ni de archivos del repositorio.
+- el puente no hace conexiones de red en modo local; el acceso a los repositorios sale únicamente de su configuración local.
 
 Estos controles los aplica el puente. Las anotaciones MCP como `readOnlyHint` son metadatos descriptivos y no funcionan como autorización.
 
 ## Comprobaciones
 
-```powershell
+```sh
 npm run check
 npm run doctor
 ```
 
-`npm run check` crea y elimina datos de prueba desechables y comprueba filesystem, Git, cursores, límites, secretos y superficie MCP. `npm run doctor` revisa los repositorios configurados sin iniciar un túnel. Las pruebas que arrancan un bridge aparte requieren `BRIDGE_COMMAND` y `BRIDGE_ARGS_JSON`; si falta el harness se informa como bloqueado, no como un falso verde.
+`npm run check` crea y elimina datos de prueba desechables y comprueba filesystem, Git, cursores, límites, secretos y superficie MCP. `npm run doctor` revisa los repositorios configurados sin iniciar otro servicio. Las pruebas que arrancan un bridge aparte requieren `BRIDGE_COMMAND` y `BRIDGE_ARGS_JSON`; si falta el harness se informa como bloqueado, no como un falso verde.
 
-## Launcher y TUI de Windows
+## Superficie de comandos local
 
-La TUI y el launcher de PowerShell son herramientas opcionales para Windows. Usan rutas relativas al proyecto o resueltas desde el entorno del usuario actual; no dependen del nombre de una cuenta concreta de Windows. Consulta la [guía en inglés](docs/user-guide.en.md) o la [guía en español](docs/user-guide.es.md) antes de activar un túnel.
+La CLI de Node y la TUI de terminal son la superficie local soportada en Windows, Linux y macOS. Usa `npx codescope ...` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. Los launchers de PowerShell, los scripts de túnel y la autenticación remota quedan fuera de esta release.
 
 ## Estado del proyecto
 
-El repositorio está en preproducción. La superficie pública de npm ya tiene una lista explícita de archivos y excluye perfiles locales, evidencias históricas, cachés, runtimes vendorizados, pruebas y contenido de repositorios. Antes de publicar hay que elegir la licencia del proyecto y ejecutar el canario extremo a extremo autenticado con un cliente de túnel externo.
+El alcance de la release es únicamente local. Antes de publicar hay que elegir la licencia del proyecto, ejecutar `npm pack --dry-run` y completar un canario local por stdio en los sistemas operativos soportados. El túnel y la autenticación remota quedan fuera de esta release.

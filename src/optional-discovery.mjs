@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 export const DISCOVERY_POLICY = Object.freeze({
@@ -10,27 +11,35 @@ export const DISCOVERY_POLICY = Object.freeze({
 const TARGETS = Object.freeze({
   ponytail: Object.freeze({
     root: "basePath",
-    relative: path.join("plugins", "cache", "ponytail", "ponytail"),
+    relative: path.posix.join("plugins", "cache", "ponytail", "ponytail"),
     expected: "directory",
     markers: Object.freeze([
-      path.join(".codex-plugin", "plugin.json"),
+      path.posix.join(".codex-plugin", "plugin.json"),
       "package.json",
-      path.join("ponytail-mcp", "package.json"),
-      path.join("ponytail-mcp", "index.js"),
+      path.posix.join("ponytail-mcp", "package.json"),
+      path.posix.join("ponytail-mcp", "index.js"),
     ]),
   }),
   codebase_memory: Object.freeze({
     root: "localAppData",
     relatives: Object.freeze([
-      path.join("Programs", "codebase-memory-mcp", "codebase-memory-mcp.exe"),
-      path.join("Programs", "codebase-memory-mcp", "codebase-memory-mcp"),
+      path.posix.join("Programs", "codebase-memory-mcp", "codebase-memory-mcp.exe"),
+      path.posix.join("Programs", "codebase-memory-mcp", "codebase-memory-mcp"),
     ]),
     expected: "file",
   }),
   context_mode: Object.freeze({
     root: "appData",
-    relatives: Object.freeze([
-      path.join("npm", "node_modules", "context-mode", "server.bundle.mjs"),
+    relatives: Object.freeze([path.posix.join("npm", "node_modules", "context-mode", "server.bundle.mjs")]),
+    candidates: Object.freeze([
+      Object.freeze({
+        root: "npmGlobalModules",
+        relatives: Object.freeze([path.posix.join("context-mode", "server.bundle.mjs")]),
+      }),
+      Object.freeze({
+        root: "appData",
+        relatives: Object.freeze([path.posix.join("npm", "node_modules", "context-mode", "server.bundle.mjs")]),
+      }),
     ]),
     expected: "file",
   }),
@@ -92,6 +101,53 @@ export function discoverOptionalIntegrations(setting, environment = {}) {
 
 export const discoverOptionalBackends = discoverOptionalIntegrations;
 
+export function resolveOptionalRoots(environment = {}, { platform = undefined, home = undefined } = {}) {
+  const input = readEnvironment(environment);
+  const targetPlatform = platform || input.platform || process.platform;
+  const pathApi = targetPlatform === "win32" ? path.win32 : path.posix;
+  const homeRoot = absolutePath(home || input.home || readEnv(input.env, ["HOME", "USERPROFILE"]) || os.homedir(), pathApi)
+    || pathApi.normalize(os.homedir());
+  const explicitBase = configuredPath(input, ENV_ROOT_KEYS.basePath, ["CODEX_HOME"], pathApi);
+  const explicitLocal = configuredPath(input, ["localAppData", "local_app_data"], ["LOCALAPPDATA"], pathApi, targetPlatform === "win32");
+  const explicitApp = configuredPath(input, ["appData", "app_data"], ["APPDATA"], pathApi, targetPlatform === "win32");
+  const explicitData = configuredPath(input, ["dataHome", "data_home"], [], pathApi);
+  const explicitConfig = configuredPath(input, ["configHome", "config_home"], [], pathApi);
+  const xdgData = configuredPath(input, [], ["XDG_DATA_HOME"], pathApi, targetPlatform !== "win32" && targetPlatform !== "darwin");
+  const xdgConfig = configuredPath(input, [], ["XDG_CONFIG_HOME"], pathApi, targetPlatform !== "win32" && targetPlatform !== "darwin");
+
+  let localAppData;
+  let appData;
+  if (targetPlatform === "win32") {
+    localAppData = explicitLocal || absolutePath(readEnv(input.env, ["LOCALAPPDATA"]), pathApi) || pathApi.join(homeRoot, "AppData", "Local");
+    appData = explicitApp || absolutePath(readEnv(input.env, ["APPDATA"]), pathApi) || pathApi.join(homeRoot, "AppData", "Roaming");
+  } else if (targetPlatform === "darwin") {
+    localAppData = explicitLocal || explicitData || pathApi.join(homeRoot, "Library", "Application Support");
+    appData = explicitApp || explicitConfig || pathApi.join(homeRoot, "Library", "Preferences");
+  } else {
+    localAppData = explicitLocal || explicitData || xdgData || pathApi.join(homeRoot, ".local", "share");
+    appData = explicitApp || explicitConfig || xdgConfig || pathApi.join(homeRoot, ".config");
+  }
+
+  const npmPrefix = absolutePath(configuredPath(input, ["npmPrefix", "npm_prefix"], ["NPM_CONFIG_PREFIX", "npm_config_prefix"], pathApi), pathApi);
+  const npmGlobalModules = npmPrefix
+    ? targetPlatform === "win32"
+      ? pathApi.join(npmPrefix, "node_modules")
+      : pathApi.join(npmPrefix, "lib", "node_modules")
+    : null;
+
+  return Object.freeze({
+    platform: targetPlatform,
+    home: homeRoot,
+    basePath: explicitBase || pathApi.join(homeRoot, ".codex"),
+    localAppData,
+    appData,
+    dataHome: localAppData,
+    configHome: appData,
+    npmPrefix,
+    npmGlobalModules,
+  });
+}
+
 function normalizeSetting(setting) {
   if (setting === true) return { enabled: true, targets: allTargets(true) };
   if (!setting || typeof setting !== "object" || Array.isArray(setting)) {
@@ -123,18 +179,47 @@ function firstSettingValue(containers, aliases) {
 }
 
 function normalizeEnvironment(environment) {
-  if (typeof environment === "string") {
-    return { basePath: environment, localAppData: environment, appData: environment };
-  }
-  if (!environment || typeof environment !== "object" || Array.isArray(environment)) return {};
+  return resolveOptionalRoots(environment);
+}
 
-  const env = environment.env && typeof environment.env === "object" && !Array.isArray(environment.env)
-    ? environment.env
-    : {};
-  return Object.fromEntries(Object.entries(ENV_ROOT_KEYS).map(([root, keys]) => {
-    const value = keys.map((key) => environment[key] ?? env[key]).find((candidate) => candidate !== undefined);
-    return [root, value];
-  }));
+function readEnvironment(environment) {
+  if (typeof environment === "string") return { basePath: environment, localAppData: environment, appData: environment };
+  if (!environment || typeof environment !== "object" || Array.isArray(environment)) return { env: {} };
+  const nested = environment.env && typeof environment.env === "object" && !Array.isArray(environment.env) ? environment.env : {};
+  const env = Object.keys(nested).length ? { ...environment, ...nested } : environment;
+  return {
+    ...environment,
+    env,
+  };
+}
+
+function firstDefined(environment, keys) {
+  for (const key of keys) {
+    if (environment[key] !== undefined) return environment[key];
+  }
+  return undefined;
+}
+
+function readEnv(environment, keys) {
+  for (const key of keys) {
+    const actual = Object.keys(environment || {}).find((candidate) => candidate.toLowerCase() === key.toLowerCase());
+    if (actual !== undefined && environment[actual] !== undefined) return environment[actual];
+  }
+  return undefined;
+}
+
+function absolutePath(value, pathApi) {
+  return typeof value === "string" && value.length > 0 && !value.includes("\0") && pathApi.isAbsolute(value)
+    ? pathApi.normalize(value)
+    : null;
+}
+
+function configuredPath(input, directKeys, envKeys, pathApi, readEnvironment = true) {
+  const direct = firstDefined(input, directKeys);
+  if (direct !== undefined) return absolutePath(direct, pathApi) || direct;
+  if (!readEnvironment) return null;
+  const fromEnv = readEnv(input.env, envKeys);
+  return fromEnv === undefined ? null : absolutePath(fromEnv, pathApi) || fromEnv;
 }
 
 function getFileSystem(environment) {
@@ -177,7 +262,8 @@ function inspectPonytail(target, roots, fileSystem) {
   let found = null;
   let unavailable = null;
   for (const version of versions) {
-    const candidate = path.join(target.relative, version);
+    const pathApi = roots.platform === "win32" ? path.win32 : path.posix;
+    const candidate = pathApi.join(target.relative, version);
     const inspected = inspectPath(target, roots, candidate, fileSystem, { markers: target.markers });
     if (inspected.status === "validated") return Object.freeze({ ...inspected, version });
     if (inspected.status === "found" && !found) found = { ...inspected, version };
@@ -189,22 +275,29 @@ function inspectPonytail(target, roots, fileSystem) {
 function inspectFiles(target, roots, fileSystem) {
   let found = null;
   let unavailable = null;
-  for (const relative of target.relatives) {
-    const inspected = inspectPath(target, roots, relative, fileSystem);
-    if (inspected.status === "validated") return inspected;
-    if (inspected.status === "found" && !found) found = inspected;
-    if (inspected.status === "unavailable" && !unavailable) unavailable = inspected;
+  const candidates = target.candidates || [{ root: target.root, relatives: target.relatives }];
+  const pathApi = roots.platform === "win32" ? path.win32 : path.posix;
+  const hasUsableRoot = candidates.some((candidate) => isAbsoluteSafePath(roots[candidate.root], pathApi));
+  for (const candidate of candidates) {
+    for (const relative of candidate.relatives) {
+      const inspected = inspectPath({ ...target, root: candidate.root }, roots, relative, fileSystem);
+      if (inspected.status === "validated") return inspected;
+      if (inspected.status === "found" && !found) found = inspected;
+      if (inspected.status === "unavailable" && !unavailable) unavailable = inspected;
+    }
   }
-  return found || unavailable || result("absent", { reason: "known_path_absent", kind: target.expected });
+  return found || (hasUsableRoot ? result("absent", { reason: "known_path_absent", kind: target.expected }) : unavailable)
+    || result("absent", { reason: "known_path_absent", kind: target.expected });
 }
 
 function inspectPath(target, roots, relative, fileSystem, { markers = target.markers || [] } = {}) {
   const root = roots[target.root];
-  if (!isAbsoluteSafePath(root)) return result("unavailable", { reason: "invalid_root" });
+  const pathApi = roots.platform === "win32" ? path.win32 : path.posix;
+  if (!isAbsoluteSafePath(root, pathApi)) return result("unavailable", { reason: "invalid_root" });
 
-  const normalizedRoot = path.normalize(root);
-  const candidate = path.resolve(normalizedRoot, relative);
-  if (!isWithin(normalizedRoot, candidate)) return result("unavailable", { reason: "candidate_outside_root" });
+  const normalizedRoot = pathApi.normalize(root);
+  const candidate = pathApi.resolve(normalizedRoot, relative);
+  if (!isWithin(normalizedRoot, candidate, pathApi)) return result("unavailable", { reason: "candidate_outside_root" });
 
   let rootStat;
   try {
@@ -248,12 +341,12 @@ function inspectPath(target, roots, relative, fileSystem, { markers = target.mar
   } catch {
     return result("unavailable", { path: candidate, reason: "path_unavailable", kind: target.expected });
   }
-  if (!isWithin(rootReal, candidateReal)) return result("unavailable", { path: candidate, reason: "outside_root", kind: target.expected });
+  if (!isWithin(rootReal, candidateReal, pathApi)) return result("unavailable", { path: candidate, reason: "outside_root", kind: target.expected });
 
   if (!markers.length) return result("validated", { path: candidate, kind: target.expected });
   for (const marker of markers) {
-    const markerPath = path.resolve(candidate, marker);
-    if (!isWithin(candidate, markerPath)) return result("unavailable", { path: candidate, reason: "marker_outside_root", kind: target.expected });
+    const markerPath = pathApi.resolve(candidate, marker);
+    if (!isWithin(candidate, markerPath, pathApi)) return result("unavailable", { path: candidate, reason: "marker_outside_root", kind: target.expected });
     let markerStat;
     try {
       markerStat = fileSystem.lstatSync(markerPath);
@@ -269,7 +362,7 @@ function inspectPath(target, roots, relative, fileSystem, { markers = target.mar
     } catch {
       return result("unavailable", { path: candidate, reason: "marker_unavailable", kind: target.expected });
     }
-    if (!isWithin(rootReal, markerReal)) return result("unavailable", { path: candidate, reason: "marker_outside_root", kind: target.expected });
+    if (!isWithin(rootReal, markerReal, pathApi)) return result("unavailable", { path: candidate, reason: "marker_outside_root", kind: target.expected });
     return result("validated", { path: candidate, marker, kind: target.expected });
   }
   return result("found", { path: candidate, reason: "validation_marker_missing", kind: target.expected });
@@ -289,13 +382,13 @@ function result(status, details = {}) {
   });
 }
 
-function isAbsoluteSafePath(value) {
-  return typeof value === "string" && value.length > 0 && !value.includes("\0") && path.isAbsolute(value);
+function isAbsoluteSafePath(value, pathApi = path) {
+  return typeof value === "string" && value.length > 0 && !value.includes("\0") && pathApi.isAbsolute(value);
 }
 
-function isWithin(root, candidate) {
-  const relative = path.relative(root, candidate);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+function isWithin(root, candidate, pathApi = path) {
+  const relative = pathApi.relative(root, candidate);
+  return relative === "" || (!relative.startsWith("..") && !pathApi.isAbsolute(relative));
 }
 
 function isVersionName(value) {

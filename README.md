@@ -12,7 +12,7 @@ CodeScope is a local, read-only [Model Context Protocol (MCP)](https://modelcont
 - keeps repository selection and session access explicit when that mode is enabled;
 - exposes versioned advisory design guidance;
 - can add Codebase Memory or Context Mode only when a repository-specific, read-only binding has been configured and validated;
-- runs over local stdio by default. A tunnel is an optional deployment layer.
+- runs over local stdio. Local mode is the only supported transport in this release.
 
 The bridge does not provide a general filesystem server, a Git write API, an arbitrary MCP proxy, or a public HTTP listener by default.
 
@@ -24,11 +24,11 @@ The bridge does not provide a general filesystem server, a Git write API, an arb
 
 ## Quick start
 
-From the project directory:
+From an installed npm package:
 
-```powershell
-npm ci
-Copy-Item config.example.json config.json
+```sh
+npm install codescope-bridge
+npx codescope init --config ./config.json
 ```
 
 Edit `config.json` and replace the example root with an absolute path on the local machine. Every repository must keep `read_only` set to `true`:
@@ -50,28 +50,40 @@ Edit `config.json` and replace the example root with an absolute path on the loc
 }
 ```
 
+The terminal UI can mark a configured repository with `enabled: false` without deleting it. Disabled entries stay in the local file but are not exposed by the bridge. The UI also preserves and toggles configured read-only Codebase Memory and Context Mode bindings; it does not invent a backend path.
+
 Start the local stdio server:
 
-```powershell
-$env:CODESCOPE_CONFIG = (Resolve-Path .\config.json).Path
-node .\src\server.mjs
+```sh
+npx codescope serve --config ./config.json
 ```
 
-The process reads requests from stdio and writes protocol responses to stdout. Operational logs go to stderr. The bridge does not start a tunnel unless a separate launcher is explicitly used.
+The process reads requests from stdio and writes protocol responses to stdout. Operational logs go to stderr. Local mode does not start a tunnel, open a network listener, or require an OpenAI API key.
 
 ## npm command
 
 The package includes a small Node CLI. From a checkout, or after installing the package in a local application directory:
 
-```powershell
+```sh
 npm install .
-npx codescope init
-npx codescope serve --config .\\config.json
+npx codescope init --config ./config.json
+npx codescope serve --config ./config.json
 ```
 
-`init` only creates a local template and refuses to replace an existing file unless `--force` is supplied. `serve` starts the same stdio bridge as `node src/server.mjs`; it does not start a tunnel.
+`init` only creates a local template and refuses to replace an existing file unless `--force` is supplied. `serve` starts the same stdio bridge as `node src/server.mjs`.
 
-The npm package deliberately excludes `deps/`, managed profiles, caches, test evidence, and real repository content. The optional Windows tunnel client is an external installation. Set `CODESCOPE_TUNNEL_CLIENT_PATH` to its absolute executable path, `CODESCOPE_TUNNEL_CLIENT_ROOT` to the separately verified release metadata directory, and optionally `CODESCOPE_TUNNEL_RUN_DIR` and `CODESCOPE_TUNNEL_SAMPLE_CONFIG` for writable runtime state and a sample profile. Credentials remain in the process environment or the tunnel client’s secret store.
+For interactive local configuration and diagnostics, run `npx codescope ui --config ./config.json`. The UI manages local setup; `serve` remains the MCP stdio bridge.
+The UI can also run `serve` in the foreground for a local smoke check; press `Ctrl+C` to stop it. An MCP host normally starts `serve` itself.
+
+The npm package deliberately excludes `deps/`, managed profiles, caches, test evidence, Windows launchers, and real repository content.
+
+`codex-repositories` is an import helper for the local setup flow:
+
+```sh
+npx codescope codex-repositories
+```
+
+It reads only `CODEX_HOME/config.toml`. When `CODEX_HOME` is not set, it checks `~/.codex/config.toml` on Linux and macOS, and the equivalent user-home `.codex/config.toml` on Windows. It extracts `[projects.'...']` and `[projects."..."]` entries as candidates. The user must still choose which candidates to copy into CodeScope's own configuration; a Codex project entry never grants repository access by itself.
 
 ## Repository and session access
 
@@ -105,23 +117,23 @@ Ponytail instructions are also optional and are advertised only after the local 
 - `.git`, environment files, credentials, private keys, certificates, and matching secret content are denied or redacted;
 - Git runs without a shell, terminal prompts, external diff helpers, or text converters, and scopes `safe.directory` to the selected canonical root;
 - no repository write operation is exposed;
-- tunnel credentials, if a deployment uses a tunnel, must come from the process environment or the tunnel client’s secret store rather than MCP arguments or repository files.
+- the bridge makes no network connection in local mode; repository access comes only from its local configuration.
 
 These controls are enforced by the bridge. MCP annotations such as `readOnlyHint` are descriptive metadata and are not used as an authorization mechanism.
 
 ## Checks
 
-```powershell
+```sh
 npm run check
 npm run doctor
 ```
 
-`npm run check` creates and removes disposable test data and verifies filesystem, Git, cursor, limit, secret, and MCP-surface invariants. `npm run doctor` checks the configured repositories without starting a tunnel. Tests that exercise a separately launched bridge require `BRIDGE_COMMAND` and `BRIDGE_ARGS_JSON`; an unset harness is reported as blocked rather than silently passing.
+`npm run check` creates and removes disposable test data and verifies filesystem, Git, cursor, limit, secret, and MCP-surface invariants. `npm run doctor` checks the configured repositories without starting another service. Tests that exercise a separately launched bridge require `BRIDGE_COMMAND` and `BRIDGE_ARGS_JSON`; an unset harness is reported as blocked rather than silently passing.
 
-## Windows launcher and TUI
+## Local command surface
 
-The PowerShell TUI and launcher are optional Windows tooling. They use paths relative to the project or paths resolved from the current user’s environment; they do not require a particular Windows account name. Review the [English user guide](docs/user-guide.en.md) or the [Spanish user guide](docs/user-guide.es.md) before enabling a tunnel.
+The Node CLI and terminal UI are the supported local command surface on Windows, Linux, and macOS. Use `npx codescope ...` for setup, serving, diagnostics, and Codex repository discovery. PowerShell launchers, tunnel scripts, and remote authentication are outside this release.
 
 ## Project status
 
-The repository is in preproduction. The public npm surface now has an explicit file allowlist and excludes local profiles, historical evidence, caches, vendored runtimes, tests, and repository content. Before publishing, choose the project license and run the authenticated tunnel end-to-end canary with an external tunnel client.
+The release scope is local-only. Before publishing, choose the project license, run `npm pack --dry-run`, and complete a local stdio canary on the supported operating systems. No tunnel or remote authentication is part of this release.

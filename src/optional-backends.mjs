@@ -4,16 +4,26 @@ import os from "node:os";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { resolveOptionalRoots } from "./optional-discovery.mjs";
 
-const localAppData = path.isAbsolute(process.env.LOCALAPPDATA || "")
-  ? process.env.LOCALAPPDATA
-  : path.join(os.homedir(), "AppData", "Local");
-const appData = path.isAbsolute(process.env.APPDATA || "")
-  ? process.env.APPDATA
-  : path.join(os.homedir(), "AppData", "Roaming");
+export function resolveOptionalBackendPaths(environment = process.env, options = {}) {
+  const roots = resolveOptionalRoots(environment, options);
+  const pathApi = roots.platform === "win32" ? path.win32 : path.posix;
+  const codebaseMemoryCommand = pathApi.join(
+    roots.localAppData,
+    "Programs",
+    "codebase-memory-mcp",
+    roots.platform === "win32" ? "codebase-memory-mcp.exe" : "codebase-memory-mcp",
+  );
+  const contextModeServer = roots.npmGlobalModules
+    ? pathApi.join(roots.npmGlobalModules, "context-mode", "server.bundle.mjs")
+    : pathApi.join(roots.appData, "npm", "node_modules", "context-mode", "server.bundle.mjs");
+  return Object.freeze({ codebaseMemoryCommand, contextModeServer, roots });
+}
 
-export const DEFAULT_CBM_COMMAND = path.join(localAppData, "Programs", "codebase-memory-mcp", "codebase-memory-mcp.exe");
-export const DEFAULT_CONTEXT_MODE_SERVER = path.join(appData, "npm", "node_modules", "context-mode", "server.bundle.mjs");
+const DEFAULT_OPTIONAL_BACKEND_PATHS = resolveOptionalBackendPaths();
+export const DEFAULT_CBM_COMMAND = DEFAULT_OPTIONAL_BACKEND_PATHS.codebaseMemoryCommand;
+export const DEFAULT_CONTEXT_MODE_SERVER = DEFAULT_OPTIONAL_BACKEND_PATHS.contextModeServer;
 
 export function getKnownContextModeStorageRoots(environment = process.env) {
   const home = os.homedir();

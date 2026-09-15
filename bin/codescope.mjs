@@ -3,6 +3,8 @@
 import { copyFile, mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { discoverCodexRepositories } from "../src/codex-config.mjs";
+import { runTui } from "../src/tui.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -20,14 +22,16 @@ Usage:
   codescope init [--config <path>] [--force]
   codescope serve [--config <path>]
   codescope doctor [--config <path>]
+  codescope ui [--config <path>]
+  codescope codex-repositories [--text]
   codescope --version
 
-The bridge uses stdio. Repository roots and optional integrations stay in the
-local configuration; tunnel credentials and tunnel runtimes are external.`);
+The bridge uses stdio in local-only mode. Repository roots and optional
+integrations stay in the local configuration; no tunnel is used.`);
 }
 
 function configPath() {
-  return resolve(valueFor("--config", join(process.cwd(), "config.json")));
+  return resolve(valueFor("--config", process.env.CODESCOPE_CONFIG || join(process.cwd(), "config.json")));
 }
 
 async function init() {
@@ -56,6 +60,19 @@ async function doctor() {
   await import(pathToFileURL(join(packageRoot, "scripts", "doctor.mjs")));
 }
 
+async function codexRepositories() {
+  const result = await discoverCodexRepositories();
+  if (args.includes("--text")) {
+    for (const candidate of result.candidates) console.log(candidate.path);
+    return;
+  }
+  console.log(JSON.stringify(result, null, 2));
+}
+
+async function ui() {
+  await runTui({ configPath: configPath(), packageRoot });
+}
+
 if (command === "--help" || command === "-h" || command === "help") {
   usage();
 } else if (command === "--version" || command === "-v") {
@@ -66,6 +83,10 @@ if (command === "--help" || command === "-h" || command === "help") {
   await serve();
 } else if (command === "doctor") {
   await doctor();
+} else if (command === "ui") {
+  await ui();
+} else if (command === "codex-repositories") {
+  await codexRepositories();
 } else {
   console.error(`Unknown command: ${command}`);
   usage();

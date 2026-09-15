@@ -8,56 +8,70 @@ Copia `config.example.json` como `config.json` y asigna a cada repositorio un al
 
 Mantén `config.json` fuera del control de versiones si contiene rutas locales. Define `CODESCOPE_CONFIG` con su ruta absoluta antes de arrancar el servidor.
 
+La TUI puede desactivar un repositorio con `enabled: false` y conservar su entrada para volver a activarlo. El puente solo expone las entradas activas y siempre exige `read_only: true`.
+
 ## 2. Arrancar el puente
 
-```powershell
-$env:CODESCOPE_CONFIG = 'C:\ruta\a\codescope\config.json'
-node .\src\server.mjs
+```sh
+npx codescope serve --config ./config.json
 ```
 
 El servidor usa stdio. Conéctalo desde un cliente MCP que pueda arrancar servidores stdio locales. No añadas un listener HTTP público para solucionar una limitación del cliente.
 
 La CLI de npm ofrece el mismo flujo sin depender de un runtime vendorizado:
 
-```powershell
-npx codescope init
-npx codescope serve --config .\\config.json
+```sh
+npx codescope init --config ./config.json
+npx codescope serve --config ./config.json
 ```
 
-El paquete no contiene un ejecutable del túnel, un perfil gestionado ni una caché local. Si hace falta el túnel opcional de Windows, instala ese cliente aparte y define `CODESCOPE_TUNNEL_CLIENT_PATH` y `CODESCOPE_TUNNEL_CLIENT_ROOT` antes de usar el launcher de PowerShell. `CODESCOPE_TUNNEL_RUN_DIR` puede apuntar a una carpeta de estado escribible del usuario.
+El modo local no necesita un cliente de túnel ni una API key de OpenAI. El paquete no contiene un runtime vendorizado, un perfil gestionado, una caché local ni un launcher de Windows.
 
-En Windows, la TUI opcional puede gestionar el perfil local y el ciclo de vida del túnel. No cambia la política de solo lectura del puente. El túnel solo debe iniciarse después de revisar su perfil y la credencial de runtime.
+La CLI de Node y la TUI de terminal son la interfaz local soportada en Windows, Linux y macOS. Usa `npx codescope ...` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. Los launchers de PowerShell y los scripts de túnel quedan fuera de esta release.
 
-## 3. Seleccionar el repositorio de una conversación
+Para la configuración y el diagnóstico locales interactivos, ejecuta:
+
+```sh
+npx codescope ui --config ./config.json
+```
+
+La UI gestiona la preparación y el diagnóstico locales; `serve` sigue siendo el puente MCP por stdio.
+La UI también puede ejecutar `serve` en primer plano para una comprobación local; pulsa `Ctrl+C` para detenerlo. Normalmente el propio cliente MCP es quien arranca `serve`.
+
+## 3. Importar candidatos desde Codex
+
+`npx codescope codex-repositories` lee `CODEX_HOME/config.toml` o, si la variable no está definida, `~/.codex/config.toml`. Extrae las secciones `[projects.'...']` y `[projects."..."]` y muestra carpetas candidatas. Es solo una lista de descubrimiento: el usuario debe elegir los candidatos y copiarlos a la configuración propia de CodeScope. CodeScope nunca convierte por sí solo la lista de proyectos de Codex en autorización.
+
+## 4. Seleccionar el repositorio de una conversación
 
 Si la selección por sesión está activa, el agente llama a `bridge_access_status`, muestra en el chat los alias configurados y pregunta cuál quiere usar el usuario. Después llama a `bridge_access_select` para ese alias. Cada llamada de repositorio incluye el alias seleccionado. Cuando cambia la selección, el agente debe mostrar un aviso breve: la conversación solo puede leer el repositorio configurado, seleccionado y de solo lectura hasta liberarlo o hasta que caduque la sesión.
 
 Si el agente no tiene metadatos de sesión o el usuario no ha seleccionado un alias, el puente debe cerrarse. No debe adivinarlo a partir de una ruta mencionada en la conversación.
 
-## 4. Usar las herramientas base
+## 5. Usar las herramientas base
 
 Usa las herramientas de filesystem para lecturas y búsquedas acotadas. Usa Git para estado, referencias inmutables, historial y diffs. Usa `design_guidance` cuando el usuario pida la política advisory de diseño del proyecto.
 
 Trata `truncated: true`, un cursor de continuación, un contador de redacciones o una denegación como parte de la respuesta. No presentes un resultado parcial como si fuese una lectura completa.
 
-## 5. Usar backends opcionales
+## 6. Usar backends opcionales
 
 Codebase Memory y Context Mode son opt-in por repositorio. Deben estar configurados con raíces coincidentes, flags de solo lectura, rutas de fuente/corpus acotadas y una instalación validada. El autodescubrimiento es una comprobación de lectura y no crea un vínculo. Si falta la instalación o el vínculo no está listo, explica que ese contexto opcional no está disponible y continúa con filesystem/Git cuando corresponda.
 
 Las instrucciones de Ponytail son advisory y opcionales. Su ausencia no debe desactivar el puente base ni las instrucciones de diseño.
 
-## 6. Reglas de seguridad para el agente
+## 7. Reglas de seguridad para el agente
 
 - Nunca pidas leer la raíz del repositorio, una ruta absoluta, `.git`, un archivo de entorno, credenciales, claves privadas, certificados o archivos de tokens.
 - Nunca solicites escrituras, commits, checkout, reset, cambios del índice, reindexado u operaciones de administración de backends.
 - Nunca inventes un alias, ID de sesión, nombre de proyecto, raíz, revisión o vínculo de backend opcional.
-- No muestres en la respuesta rutas absolutas locales, PIDs, credenciales, identificadores de túnel ni artefactos internos de validación.
+- No muestres en la respuesta rutas absolutas locales, PIDs, credenciales ni artefactos internos de validación.
 - Separa los datos observados por las herramientas, las inferencias y lo bloqueado o no probado.
 - Mantén la conversación en el idioma del usuario. Estas instrucciones en inglés no cambian el idioma del usuario.
 
-## 7. Diagnóstico
+## 8. Diagnóstico
 
-- `config_missing`: define `CODESCOPE_CONFIG` o coloca un `config.json` local junto al entrypoint del servidor.
+- `config_missing`: pasa `--config`, define `CODESCOPE_CONFIG` o coloca un `config.json` local en el directorio de trabajo actual.
 - `repository_access_required` o `session_required`: selecciona un alias configurado en la sesión actual.
 - `path_denied` o `secret_denied`: la ruta o el contenido pedido queda fuera de la política de lectura pública.
 - `backend_unavailable`: el backend opcional falta, está desactivado o no está vinculado a este repositorio.

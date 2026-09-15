@@ -3,7 +3,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { discoverOptionalIntegrations } from "../src/optional-discovery.mjs";
+import { discoverOptionalIntegrations, resolveOptionalRoots } from "../src/optional-discovery.mjs";
+import { resolveOptionalBackendPaths } from "../src/optional-backends.mjs";
 
 async function tempRoot() {
   return await mkdtemp(path.join(os.tmpdir(), "codescope-discovery-"));
@@ -16,6 +17,54 @@ function roots(root) {
     appData: path.join(root, "app-data"),
   };
 }
+
+test("uses XDG roots on Linux even when Windows AppData variables are present", () => {
+  const environment = {
+    platform: "linux",
+    home: "/synthetic/linux-home",
+    env: {
+      LOCALAPPDATA: "/synthetic/windows/AppData/Local",
+      APPDATA: "/synthetic/windows/AppData/Roaming",
+    },
+  };
+  const roots = resolveOptionalRoots(environment);
+  const defaults = resolveOptionalBackendPaths(environment);
+  assert.equal(roots.localAppData, "/synthetic/linux-home/.local/share");
+  assert.equal(roots.appData, "/synthetic/linux-home/.config");
+  assert.doesNotMatch(defaults.codebaseMemoryCommand, /AppData/u);
+  assert.doesNotMatch(defaults.contextModeServer, /AppData/u);
+});
+
+test("keeps Windows LOCALAPPDATA and APPDATA defaults", () => {
+  const defaults = resolveOptionalBackendPaths({
+    platform: "win32",
+    home: "C:\\synthetic\\home",
+    env: {
+      LOCALAPPDATA: "C:\\native\\local",
+      APPDATA: "C:\\native\\roaming",
+    },
+  });
+  assert.equal(defaults.roots.localAppData, "C:\\native\\local");
+  assert.equal(defaults.roots.appData, "C:\\native\\roaming");
+  assert.match(defaults.codebaseMemoryCommand, /C:\\native\\local\\Programs/u);
+  assert.match(defaults.contextModeServer, /C:\\native\\roaming\\npm\\node_modules/u);
+});
+
+test("uses macOS Library roots and an injected npm global prefix", () => {
+  const defaults = resolveOptionalBackendPaths({
+    platform: "darwin",
+    home: "/synthetic/mac-home",
+    env: {
+      APPDATA: "/synthetic/windows/AppData/Roaming",
+      npm_config_prefix: "/synthetic/npm",
+    },
+  });
+  assert.equal(defaults.roots.localAppData, "/synthetic/mac-home/Library/Application Support");
+  assert.equal(defaults.roots.appData, "/synthetic/mac-home/Library/Preferences");
+  assert.equal(defaults.contextModeServer, "/synthetic/npm/lib/node_modules/context-mode/server.bundle.mjs");
+  assert.doesNotMatch(defaults.codebaseMemoryCommand, /AppData/u);
+  assert.doesNotMatch(defaults.contextModeServer, /AppData/u);
+});
 
 test("detects synthetic installations without launching or reading them", async () => {
   const root = await tempRoot();

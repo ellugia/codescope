@@ -21,11 +21,8 @@
     "docs/README.md",
     "docs/user-guide.en.md",
     "docs/user-guide.es.md",
-    "scripts/codescope-*.ps1",
     "scripts/doctor.mjs",
     "scripts/self-check.mjs",
-    "scripts/tunnel-*.ps1",
-    "scripts/tunnel-runtime.ps1",
     "src/"
   ],
   "engines": {
