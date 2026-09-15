@@ -8,7 +8,7 @@ The MCP server is a local stdio process. `src/server.mjs` owns transport and pro
 
 Local stdio is the only supported transport in this release. The bridge does not expose a public listener.
 
-The Node CLI manages local configuration and diagnostics; `serve` remains the MCP stdio bridge. With the normal local install, invoke it as `node node_modules/codescope/bin/codescope.mjs <command>` from the installation directory. The shorter `codescope <command>` form is equivalent when the package bin is on `PATH`.
+The Node CLI manages local configuration and diagnostics; `serve` remains the MCP stdio bridge. With the normal local install, invoke it as `node node_modules/@ellugia/codescope/bin/codescope.mjs <command>` from the installation directory. The shorter `codescope <command>` form is equivalent when the package bin is on `PATH`.
 
 ## Configuration flow
 

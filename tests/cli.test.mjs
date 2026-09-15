@@ -32,7 +32,7 @@ test("npm postinstall stays safe and noninteractive without npx", async () => {
     join(process.cwd(), "scripts", "postinstall.mjs"),
   ]);
   assert.equal(result.status, 0);
-  assert.match(result.stderr, /node node_modules[\\/]codescope[\\/]bin[\\/]codescope\.mjs setup/);
+  assert.match(result.stderr, /node node_modules[\\/]@ellugia[\\/]codescope[\\/]bin[\\/]codescope\.mjs setup/);
   assert.doesNotMatch(result.stderr, /--global/);
   assert.doesNotMatch(result.stderr, /npx codescope/);
 });

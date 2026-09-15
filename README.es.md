@@ -31,7 +31,7 @@ El puente no es un servidor de sistema de archivos general, no ofrece una API de
 Instala el paquete en la carpeta del proyecto actual:
 
 ```sh
-npm install codescope
+npm install @ellugia/codescope
 ```
 
 Esta es la instalación normal. No añadas el modificador `--global`. El
@@ -60,7 +60,7 @@ local normal, muestra las instrucciones listas para copiar desde la carpeta de
 la instalación:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs instructions
+node node_modules/@ellugia/codescope/bin/codescope.mjs instructions
 ```
 
 Si el comando `codescope` ya está en tu `PATH`, `codescope instructions` es
@@ -97,7 +97,7 @@ La TUI puede marcar un repositorio configurado con `enabled: false` sin borrarlo
 Arranca el servidor local por stdio:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs serve
+node node_modules/@ellugia/codescope/bin/codescope.mjs serve
 ```
 
 El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en stdout. Los logs operativos van a stderr. El modo local no inicia un túnel, no abre un listener de red y no necesita una API key de OpenAI.
@@ -113,7 +113,7 @@ node bin/codescope.mjs setup
 
 `setup` crea la configuración del usuario cuando hace falta y abre la TUI guiada. `init` sigue disponible para una preparación basada en plantilla, y `serve` inicia el mismo puente stdio que `node src/server.mjs`. Pasa `--config ./config.json` si prefieres conservar la configuración junto al proyecto actual.
 
-Para la configuración y el diagnóstico locales interactivos, ejecuta `node node_modules/codescope/bin/codescope.mjs ui`. La UI gestiona la preparación local; `serve` sigue siendo el puente MCP por stdio.
+Para la configuración y el diagnóstico locales interactivos, ejecuta `node node_modules/@ellugia/codescope/bin/codescope.mjs ui`. La UI gestiona la preparación local; `serve` sigue siendo el puente MCP por stdio.
 La UI también puede ejecutar `serve` en primer plano para una comprobación local; pulsa `Ctrl+C` para detenerlo. Normalmente el propio cliente MCP es quien arranca `serve`.
 
 El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, evidencias de pruebas, launchers de Windows y contenido real de repositorios.
@@ -121,7 +121,7 @@ El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, e
 `codex-repositories` es una ayuda de importación para la configuración local:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs codex-repositories
+node node_modules/@ellugia/codescope/bin/codescope.mjs codex-repositories
 ```
 
 Lee únicamente `CODEX_HOME/config.toml`. Si `CODEX_HOME` no está definido, comprueba `~/.codex/config.toml` en Linux y macOS, y el `.codex/config.toml` equivalente del directorio de usuario en Windows. Extrae las secciones `[projects.'...']` y `[projects."..."]` como candidatos. El usuario debe elegir qué candidatos copiar a la configuración propia de CodeScope; una entrada de proyecto de Codex nunca concede acceso por sí sola.
@@ -173,7 +173,7 @@ npm run doctor
 
 ## Superficie de comandos local
 
-La CLI de Node y la TUI de terminal son la superficie local soportada en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/codescope/bin/codescope.mjs <comando>` para la configuración manual, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`. Los launchers de PowerShell, los scripts de túnel y la autenticación remota quedan fuera de esta release.
+La CLI de Node y la TUI de terminal son la superficie local soportada en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/@ellugia/codescope/bin/codescope.mjs <comando>` para la configuración manual, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`. Los launchers de PowerShell, los scripts de túnel y la autenticación remota quedan fuera de esta release.
 
 ## Estado del proyecto
 

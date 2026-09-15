@@ -31,7 +31,7 @@ The bridge does not provide a general filesystem server, a Git write API, an arb
 Install the package in the current project directory:
 
 ```sh
-npm install codescope
+npm install @ellugia/codescope
 ```
 
 This is the normal installation. Do not add a `--global` flag. The npm
@@ -59,7 +59,7 @@ package prints a reminder during `npm install`. With the normal local install,
 print the ready-to-copy instructions from the installation directory with:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs instructions
+node node_modules/@ellugia/codescope/bin/codescope.mjs instructions
 ```
 
 If the `codescope` command is already on your `PATH`, `codescope instructions`
@@ -95,7 +95,7 @@ The terminal UI can mark a configured repository with `enabled: false` without d
 Start the local stdio server:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs serve
+node node_modules/@ellugia/codescope/bin/codescope.mjs serve
 ```
 
 The process reads requests from stdio and writes protocol responses to stdout. Operational logs go to stderr. Local mode does not start a tunnel, open a network listener, or require an OpenAI API key.
@@ -111,7 +111,7 @@ node bin/codescope.mjs setup
 
 `setup` creates the user configuration when needed and opens the guided TUI. `init` remains available for scripted/template-only setup, and `serve` starts the same stdio bridge as `node src/server.mjs`. Pass `--config ./config.json` to keep the configuration beside the current project instead.
 
-For interactive local configuration and diagnostics, run `node node_modules/codescope/bin/codescope.mjs ui`. The UI manages local setup; `serve` remains the MCP stdio bridge.
+For interactive local configuration and diagnostics, run `node node_modules/@ellugia/codescope/bin/codescope.mjs ui`. The UI manages local setup; `serve` remains the MCP stdio bridge.
 The UI can also run `serve` in the foreground for a local smoke check; press `Ctrl+C` to stop it. An MCP host normally starts `serve` itself.
 
 The npm package deliberately excludes `deps/`, managed profiles, caches, test evidence, Windows launchers, and real repository content.
@@ -119,7 +119,7 @@ The npm package deliberately excludes `deps/`, managed profiles, caches, test ev
 `codex-repositories` is an import helper for the local setup flow:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs codex-repositories
+node node_modules/@ellugia/codescope/bin/codescope.mjs codex-repositories
 ```
 
 It reads only `CODEX_HOME/config.toml`. When `CODEX_HOME` is not set, it checks `~/.codex/config.toml` on Linux and macOS, and the equivalent user-home `.codex/config.toml` on Windows. It extracts `[projects.'...']` and `[projects."..."]` entries as candidates. The user must still choose which candidates to copy into CodeScope's own configuration; a Codex project entry never grants repository access by itself.
@@ -171,7 +171,7 @@ npm run doctor
 
 ## Local command surface
 
-The Node CLI and terminal UI are the supported local command surface on Windows, Linux, and macOS. With the normal local install, use `node node_modules/codescope/bin/codescope.mjs <command>` for manual setup, serving, diagnostics, and Codex repository discovery. The shorter `codescope <command>` form is equivalent when the package bin is already on your `PATH`. PowerShell launchers, tunnel scripts, and remote authentication are outside this release.
+The Node CLI and terminal UI are the supported local command surface on Windows, Linux, and macOS. With the normal local install, use `node node_modules/@ellugia/codescope/bin/codescope.mjs <command>` for manual setup, serving, diagnostics, and Codex repository discovery. The shorter `codescope <command>` form is equivalent when the package bin is already on your `PATH`. PowerShell launchers, tunnel scripts, and remote authentication are outside this release.
 
 ## Project status
 

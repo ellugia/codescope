@@ -1,5 +1,5 @@
 {
-  "name": "codescope",
+  "name": "@ellugia/codescope",
   "version": "0.1.0",
   "private": false,
   "description": "Use ChatGPT and Codex to understand selected local repositories through a read-only MCP bridge.",

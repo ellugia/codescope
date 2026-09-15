@@ -7,7 +7,7 @@ Esta guía explica el flujo público admitido.
 Instala `codescope` en la carpeta del proyecto actual con npm:
 
 ```sh
-npm install codescope
+npm install @ellugia/codescope
 ```
 
 El instalador pregunta si quieres lanzar el setup guiado inmediatamente; si respondes que sí, crea la configuración del usuario y abre la TUI. Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El alias es el único selector de repositorio que aceptan las llamadas MCP. El puente rechaza una raíz o un proyecto enviados como ruta libre. Después de la TUI, el setup puede registrar CodeScope en Codex; nunca sustituye una entrada `codescope` existente.
@@ -26,13 +26,13 @@ La instalación normal de npm es local. Para los comandos manuales de esta
 guía, usa desde la carpeta de instalación la entrada del paquete:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs <comando>
+node node_modules/@ellugia/codescope/bin/codescope.mjs <comando>
 ```
 
 Si `codescope` ya está en tu `PATH`, la forma abreviada es equivalente.
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs serve
+node node_modules/@ellugia/codescope/bin/codescope.mjs serve
 ```
 
 El servidor usa stdio. Conéctalo desde un cliente MCP que pueda arrancar servidores stdio locales. No añadas un listener HTTP público para solucionar una limitación del cliente.
@@ -40,18 +40,18 @@ El servidor usa stdio. Conéctalo desde un cliente MCP que pueda arrancar servid
 Para una preparación basada en scripts y sin TUI, la CLI de npm también ofrece:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs init
-node node_modules/codescope/bin/codescope.mjs serve
+node node_modules/@ellugia/codescope/bin/codescope.mjs init
+node node_modules/@ellugia/codescope/bin/codescope.mjs serve
 ```
 
 El modo local funciona sin un servicio adicional ni credenciales de API. El paquete incluye directamente la CLI de Node y la TUI admitidas.
 
-La CLI de Node y la TUI de terminal son la interfaz admitida en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/codescope/bin/codescope.mjs <comando>` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`.
+La CLI de Node y la TUI de terminal son la interfaz admitida en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/@ellugia/codescope/bin/codescope.mjs <comando>` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`.
 
 Para la configuración y el diagnóstico locales interactivos, ejecuta:
 
 ```sh
-node node_modules/codescope/bin/codescope.mjs ui
+node node_modules/@ellugia/codescope/bin/codescope.mjs ui
 ```
 
 La UI gestiona la preparación y el diagnóstico locales; `serve` sigue siendo el puente MCP por stdio.
@@ -59,7 +59,7 @@ La UI también puede ejecutar `serve` en primer plano para una comprobación loc
 
 ## 3. Importar candidatos desde Codex
 
-`node node_modules/codescope/bin/codescope.mjs codex-repositories` lee la configuración de Codex, extrae sus proyectos y muestra carpetas candidatas. Es solo una lista de descubrimiento: el usuario debe elegir los candidatos y copiarlos a la configuración propia de CodeScope. CodeScope nunca convierte por sí solo la lista de proyectos de Codex en autorización.
+`node node_modules/@ellugia/codescope/bin/codescope.mjs codex-repositories` lee la configuración de Codex, extrae sus proyectos y muestra carpetas candidatas. Es solo una lista de descubrimiento: el usuario debe elegir los candidatos y copiarlos a la configuración propia de CodeScope. CodeScope nunca convierte por sí solo la lista de proyectos de Codex en autorización.
 
 ## 4. Seleccionar el repositorio de una conversación
 
@@ -90,7 +90,7 @@ Las instrucciones de Ponytail son advisory y opcionales. Su ausencia no debe des
 
 ## 8. Diagnóstico
 
-- `config_missing`: ejecuta `node node_modules/codescope/bin/codescope.mjs setup` desde la carpeta de instalación. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
+- `config_missing`: ejecuta `node node_modules/@ellugia/codescope/bin/codescope.mjs setup` desde la carpeta de instalación. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
 - `repository_access_required` o `session_required`: selecciona un alias configurado en la sesión actual.
 - `path_denied` o `secret_denied`: la ruta o el contenido pedido queda fuera de la política de lectura pública.
 - `backend_unavailable`: el backend opcional falta, está desactivado o no está vinculado a este repositorio.
