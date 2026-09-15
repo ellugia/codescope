@@ -34,40 +34,25 @@ Install the package in the current project directory:
 npm install @ellugia/codescope
 ```
 
-This is the normal installation. Do not add a `--global` flag. The npm
-installer asks whether to launch the guided setup immediately. Answer yes to
-create the user configuration in the platform
-configuration directory: `%APPDATA%\CodeScope` on Windows,
-`~/Library/Application Support/CodeScope` on macOS, or
-`$XDG_CONFIG_HOME/codescope` (usually `~/.config/codescope`) on Linux. The
-path printed by the setup UI is the file to edit. It opens the terminal UI so
-you can add repositories and configure optional integrations. Use
-`--config ./config.json` or `CODESCOPE_CONFIG` when you explicitly want
-another location.
-After the TUI, setup asks whether to register CodeScope in Codex. Registration
-uses the installed Node executable and the absolute path of this local package,
-so Codex does not need the `codescope` command on the system `PATH`. It also
-preserves an existing `codescope` entry.
-
-Some npm security policies suppress package scripts or run them without an
-interactive terminal. In that case the package still installs normally; run
-the direct setup command below from the installation directory when you are
-ready to configure it.
-
-After installation, configure the ChatGPT project that will use the MCP. The
-package prints a reminder during `npm install`. With the normal local install,
-print the ready-to-copy instructions from the installation directory with:
+After installation, run the guided setup:
 
 ```sh
-node node_modules/@ellugia/codescope/bin/codescope.mjs instructions
+codescope setup
 ```
 
-If the `codescope` command is already on your `PATH`, `codescope instructions`
-is equivalent.
+`setup` creates the user configuration, opens the terminal UI so you can add
+repositories and optional integrations, and offers to register CodeScope in
+Codex. It keeps the configuration in the platform configuration directory:
+`%APPDATA%\CodeScope` on Windows, `~/Library/Application Support/CodeScope`
+on macOS, or `$XDG_CONFIG_HOME/codescope` (usually `~/.config/codescope`) on
+Linux. Use `--config ./config.json` or `CODESCOPE_CONFIG` only when you
+explicitly want another location.
 
-Copy the output into the **Instructions** field of your ChatGPT Project. The
-canonical source is [`chatgpt/project-instructions.md`](chatgpt/project-instructions.md).
-This gives the agent the recommended repository-selection and safety workflow.
+To configure the ChatGPT project that will use the MCP, copy the contents of
+[`chatgpt/project-instructions.md`](chatgpt/project-instructions.md) into its
+**Instructions** field. The file gives the agent the recommended
+repository-selection and safety workflow.
+
 The bridge still enforces access on its own, so these instructions improve the
 interaction but are not the security boundary.
 
@@ -102,11 +87,11 @@ The process reads requests from stdio and writes protocol responses to stdout. O
 
 ## npm command
 
-The package includes a small Node CLI. From a checkout, or after installing the package in a local application directory:
+The package includes a small Node CLI. From a checkout:
 
 ```sh
 npm install .
-node bin/codescope.mjs setup
+codescope setup
 ```
 
 `setup` creates the user configuration when needed and opens the guided TUI. `init` remains available for scripted/template-only setup, and `serve` starts the same stdio bridge as `node src/server.mjs`. Pass `--config ./config.json` to keep the configuration beside the current project instead.

@@ -10,11 +10,17 @@ Instala `codescope` en la carpeta del proyecto actual con npm:
 npm install @ellugia/codescope
 ```
 
-El instalador pregunta si quieres lanzar el setup guiado inmediatamente; si respondes que sí, crea la configuración del usuario y abre la TUI. Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El alias es el único selector de repositorio que aceptan las llamadas MCP. El puente rechaza una raíz o un proyecto enviados como ruta libre. Después de la TUI, el setup puede registrar CodeScope en Codex; nunca sustituye una entrada `codescope` existente.
+Después, ejecuta la configuración guiada:
 
-Algunas políticas de seguridad de npm bloquean los scripts de los paquetes o
-los ejecutan sin una terminal interactiva. En ese caso el paquete se instala
-con normalidad; usa la orden directa de setup con Node de la sección siguiente.
+```sh
+codescope setup
+```
+
+Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El
+alias es el único selector de repositorio que aceptan las llamadas MCP. El
+puente rechaza una raíz o un proyecto enviados como ruta libre. El setup
+también ofrece registrar CodeScope en Codex y nunca sustituye una entrada
+`codescope` existente.
 
 Usa `--config <archivo>` o `CODESCOPE_CONFIG` si necesitas un archivo de configuración personalizado. Mantén ese archivo privado cuando contenga ajustes propios de tu máquina.
 
@@ -90,7 +96,7 @@ Las instrucciones de Ponytail son advisory y opcionales. Su ausencia no debe des
 
 ## 8. Diagnóstico
 
-- `config_missing`: ejecuta `node node_modules/@ellugia/codescope/bin/codescope.mjs setup` desde la carpeta de instalación. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
+- `config_missing`: ejecuta `codescope setup`. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
 - `repository_access_required` o `session_required`: selecciona un alias configurado en la sesión actual.
 - `path_denied` o `secret_denied`: la ruta o el contenido pedido queda fuera de la política de lectura pública.
 - `backend_unavailable`: el backend opcional falta, está desactivado o no está vinculado a este repositorio.

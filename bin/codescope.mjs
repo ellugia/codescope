@@ -133,7 +133,7 @@ async function askYesNo(question) {
 if (command === "--help" || command === "-h" || command === "help") {
   usage();
 } else if (command === "--version" || command === "-v") {
-  console.log("0.1.0");
+  console.log("0.1.1");
 } else if (command === "init") {
   await init();
 } else if (command === "serve") {

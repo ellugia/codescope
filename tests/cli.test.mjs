@@ -16,7 +16,7 @@ test("CLI exposes help and version without starting a server", async () => {
 
   const version = await spawnFile(process.execPath, [cli, "--version"]);
   assert.equal(version.status, 0);
-  assert.equal(version.stdout.trim(), "0.1.0");
+  assert.equal(version.stdout.trim(), "0.1.1");
 });
 
 test("CLI prints the portable ChatGPT Project instructions", async () => {
@@ -25,16 +25,6 @@ test("CLI prints the portable ChatGPT Project instructions", async () => {
   assert.match(result.stdout, /^# CodeScope project instructions/);
   assert.match(result.stdout, /user-facing conversation in the user's language/);
   assert.doesNotMatch(result.stdout, /D:\\codex|C:\\Users\\/i);
-});
-
-test("npm postinstall stays safe and noninteractive without npx", async () => {
-  const result = await spawnFile(process.execPath, [
-    join(process.cwd(), "scripts", "postinstall.mjs"),
-  ]);
-  assert.equal(result.status, 0);
-  assert.match(result.stderr, /node node_modules[\\/]@ellugia[\\/]codescope[\\/]bin[\\/]codescope\.mjs setup/);
-  assert.doesNotMatch(result.stderr, /--global/);
-  assert.doesNotMatch(result.stderr, /npx codescope/);
 });
 
 test("setup creates the default user configuration without requiring a TTY", async () => {

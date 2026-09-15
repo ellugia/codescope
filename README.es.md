@@ -34,44 +34,26 @@ Instala el paquete en la carpeta del proyecto actual:
 npm install @ellugia/codescope
 ```
 
-Esta es la instalación normal. No añadas el modificador `--global`. El
-instalador de npm pregunta si quieres lanzar el setup guiado inmediatamente.
-Responde que sí para guardar la configuración del usuario en la carpeta
-de configuración del sistema: `%APPDATA%\CodeScope` en Windows,
-`~/Library/Application Support/CodeScope` en macOS, o
-`$XDG_CONFIG_HOME/codescope` (normalmente `~/.config/codescope`) en Linux. La
-ruta que muestra la TUI es el archivo que debes editar. Abre la TUI de
-terminal para añadir repositorios y configurar integraciones opcionales. Usa
-`--config ./config.json` o `CODESCOPE_CONFIG` si quieres otra ubicación de
-forma explícita.
-Después de la TUI, el setup pregunta si quieres registrar CodeScope en Codex. El registro
-usa el ejecutable de Node instalado y la ruta absoluta de este paquete local,
-por lo que Codex no necesita que `codescope` esté en el `PATH` del sistema.
-También conserva una entrada `codescope` existente.
-
-Algunas políticas de seguridad de npm bloquean los scripts de los paquetes o
-los ejecutan sin una terminal interactiva. En ese caso el paquete se instala
-con normalidad; ejecuta la orden directa de setup que aparece abajo desde la
-carpeta de instalación cuando quieras configurarlo.
-
-Después de instalarlo, configura el proyecto de ChatGPT que utilizará el MCP.
-El paquete muestra un recordatorio durante `npm install`. Con la instalación
-local normal, muestra las instrucciones listas para copiar desde la carpeta de
-la instalación:
+Después de instalarlo, ejecuta la configuración guiada:
 
 ```sh
-node node_modules/@ellugia/codescope/bin/codescope.mjs instructions
+codescope setup
 ```
 
-Si el comando `codescope` ya está en tu `PATH`, `codescope instructions` es
-equivalente.
+`setup` crea la configuración del usuario, abre la TUI para añadir repositorios
+e integraciones opcionales y ofrece registrar CodeScope en Codex. Guarda la
+configuración en la carpeta del sistema: `%APPDATA%\CodeScope` en Windows,
+`~/Library/Application Support/CodeScope` en macOS o
+`$XDG_CONFIG_HOME/codescope` (normalmente `~/.config/codescope`) en Linux. Usa
+`--config ./config.json` o `CODESCOPE_CONFIG` solo si quieres otra ubicación.
 
-Copia la salida en el campo **Instructions** del proyecto de ChatGPT. La fuente
-canónica es [`chatgpt/project-instructions.md`](chatgpt/project-instructions.md).
-Así el agente conoce el flujo recomendado para seleccionar repositorios y
-mostrar la advertencia de seguridad. El bridge sigue imponiendo el acceso por
-sí mismo: estas instrucciones mejoran la interacción, pero no son la barrera
-de seguridad.
+Para configurar el proyecto de ChatGPT que utilizará el MCP, copia el contenido
+de [`chatgpt/project-instructions.md`](chatgpt/project-instructions.md) en su
+campo **Instructions**. Ese archivo proporciona al agente el flujo recomendado
+para seleccionar repositorios y mostrar el aviso de seguridad.
+
+El bridge sigue imponiendo el acceso por sí mismo: estas instrucciones mejoran
+la interacción, pero no son la barrera de seguridad.
 
 Edita el archivo cuya ruta muestra `init` y sustituye la raíz de ejemplo por una ruta absoluta de la máquina local. Todos los repositorios deben conservar `read_only` a `true`:
 
@@ -104,11 +86,11 @@ El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en 
 
 ## Comando npm
 
-El paquete incluye una pequeña CLI de Node. Desde un checkout, o después de instalar el paquete en la carpeta de una aplicación local:
+El paquete incluye una pequeña CLI de Node. Desde un checkout:
 
 ```sh
 npm install .
-node bin/codescope.mjs setup
+codescope setup
 ```
 
 `setup` crea la configuración del usuario cuando hace falta y abre la TUI guiada. `init` sigue disponible para una preparación basada en plantilla, y `serve` inicia el mismo puente stdio que `node src/server.mjs`. Pasa `--config ./config.json` si prefieres conservar la configuración junto al proyecto actual.

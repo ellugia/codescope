@@ -1,6 +1,6 @@
 {
   "name": "@ellugia/codescope",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Use ChatGPT and Codex to understand selected local repositories through a read-only MCP bridge.",
   "author": "ellugia",
@@ -24,7 +24,6 @@
     "docs/user-guide.en.md",
     "docs/user-guide.es.md",
     "scripts/doctor.mjs",
-    "scripts/postinstall.mjs",
     "scripts/self-check.mjs",
     "src/"
   ],
@@ -37,8 +36,7 @@
     "check": "node scripts/self-check.mjs",
     "doctor": "node scripts/doctor.mjs",
     "baseline": "node scripts/capture-baseline.mjs",
-    "stress": "node tests/stress.test.mjs",
-    "postinstall": "node scripts/postinstall.mjs"
+    "stress": "node tests/stress.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

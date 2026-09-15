@@ -561,7 +561,7 @@ function filterContextText(text, source, hasSecret) {
 
 async function withClient(config, name, operation, limits) {
   const env = minimalEnvironment(config.env || {});
-  const client = new Client({ name, version: "0.1.0" }, {});
+  const client = new Client({ name, version: "0.1.1" }, {});
   let transport;
   let timer;
   let run;

@@ -10,9 +10,17 @@ Install `codescope` in the current project with npm:
 npm install @ellugia/codescope
 ```
 
-The installer asks whether to launch the guided setup immediately; answering yes creates the user configuration and opens the terminal UI. Add every repository with a short alias, its repository folder, and `read_only: true`. The alias is the only repository selector accepted by MCP calls. The bridge rejects a path or project supplied as a free-form root. After the TUI, setup can register CodeScope in Codex; it never replaces an existing `codescope` entry.
+Then run the guided setup:
 
-Some npm security policies suppress package scripts or run them without an interactive terminal. In that case the package still installs normally; use the direct Node setup command from the next section.
+```sh
+codescope setup
+```
+
+Add every repository with a short alias, its repository folder, and
+`read_only: true`. The alias is the only repository selector accepted by MCP
+calls. The bridge rejects a path or project supplied as a free-form root. The
+setup also offers to register CodeScope in Codex and never replaces an existing
+`codescope` entry.
 
 Use `--config <file>` or `CODESCOPE_CONFIG` when you need a custom configuration file. Keep that file private when it contains machine-specific settings.
 
@@ -88,7 +96,7 @@ Ponytail instructions are advisory and optional. Their absence must not disable 
 
 ## 8. Troubleshooting
 
-- `config_missing`: run `node node_modules/@ellugia/codescope/bin/codescope.mjs setup` from the installation directory. You can also pass `--config` or set `CODESCOPE_CONFIG`. An existing `config.json` in the current working directory is still supported for compatibility.
+- `config_missing`: run `codescope setup`. You can also pass `--config` or set `CODESCOPE_CONFIG`. An existing `config.json` in the current working directory is still supported for compatibility.
 - `repository_access_required` or `session_required`: select a configured alias in the current session.
 - `path_denied` or `secret_denied`: the requested path or content is outside the public read policy.
 - `backend_unavailable`: the optional backend is absent, disabled, or not bound to this repository.
