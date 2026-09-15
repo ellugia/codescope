@@ -967,14 +967,16 @@ class Bridge {
     }
     let stat;
     let real;
+    let realRoot;
     try {
       stat = await fs.lstat(entrypoint);
       real = await fs.realpath(entrypoint);
+      realRoot = await fs.realpath(root);
     } catch {
       throw new BridgeError("backend_unavailable", "The discovered Ponytail entrypoint is unavailable.", { integration: "ponytail" });
     }
     if (!stat.isFile() || stat.isSymbolicLink()) throw new BridgeError("backend_unavailable", "The discovered Ponytail entrypoint is not a stable file.", { integration: "ponytail" });
-    const realRelative = path.relative(root, real);
+    const realRelative = path.relative(realRoot, real);
     if (realRelative.startsWith("..") || path.isAbsolute(realRelative)) throw new BridgeError("backend_unavailable", "The discovered Ponytail entrypoint changed scope.", { integration: "ponytail" });
     return real;
   }

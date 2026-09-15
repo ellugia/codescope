@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -18,7 +18,7 @@ const optionalToolNames = ["cbm_status", "cbm_search", "cbm_trace", "cbm_snippet
 const fixtureStub = path.resolve(import.meta.dirname, "fixtures", "optional-backend-stub.mjs");
 
 async function makeFixture() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "codescope-bindings-"));
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), "codescope-bindings-"));
   const repositories = {};
   for (const alias of ["repo-a", "repo-b"]) {
     const repositoryRoot = path.join(root, alias);
@@ -300,15 +300,19 @@ test("optional backend input rejects foreign projects, secrets, and path escapes
   }
 });
 
-test("the configured fixture repository advertises its optional tools", async () => {
-  const fixtureConfig = JSON.parse(await readFile(path.resolve(import.meta.dirname, "..", "config", "fixture.json"), "utf8"));
-  const config = normalizeConfig(fixtureConfig);
-  const names = getToolDefinitions(config).map((tool) => tool.name);
-  assert.ok(names.includes("cbm_status"));
-  assert.ok(names.includes("context_mode_search"));
-  for (const name of optionalToolNames) {
-    const tool = getToolDefinitions(config).find((candidate) => candidate.name === name);
-    assert.ok(tool?.inputSchema.properties.repository, `${name} retains repository compatibility`);
-    assert.equal(tool.inputSchema.required?.includes("repository") || false, false, `${name} keeps legacy repository optional`);
+test("a repository-bound fixture advertises its optional tools", async () => {
+  const fixture = await makeFixture();
+  try {
+    const config = normalizeConfig(rawConfig(fixture, ["repo-a"]));
+    const names = getToolDefinitions(config).map((tool) => tool.name);
+    assert.ok(names.includes("cbm_status"));
+    assert.ok(names.includes("context_mode_search"));
+    for (const name of optionalToolNames) {
+      const tool = getToolDefinitions(config).find((candidate) => candidate.name === name);
+      assert.ok(tool?.inputSchema.properties.repository, `${name} retains repository compatibility`);
+      assert.equal(tool.inputSchema.required?.includes("repository") || false, false, `${name} keeps legacy repository optional`);
+    }
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
   }
 });

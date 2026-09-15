@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createBridge, normalizeConfig } from "../src/bridge.mjs";
@@ -44,7 +44,7 @@ async function assertRejected(call, code, label, forbidden = []) {
 }
 
 before(async () => {
-  root = await mkdtemp(join(tmpdir(), "codescope-session-identity-"));
+  root = await mkdtemp(join(await realpath(tmpdir()), "codescope-session-identity-"));
   repoA = join(root, "repo-a");
   repoB = join(root, "repo-b");
   await Promise.all([mkdir(repoA), mkdir(repoB)]);

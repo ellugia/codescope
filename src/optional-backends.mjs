@@ -288,7 +288,7 @@ async function contextModeSearch(config, limits, args, guards) {
 
 async function cloneContextStorage(source, allowedFiles, verifyNoReparse = async () => {}) {
   // ponytail: the native ctx_search updates session stats; an ephemeral copy is the smallest read-only boundary.
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "codescope-context-readonly-"));
+  const root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "codescope-context-readonly-"));
   const storage = path.join(root, "storage-session");
   const home = path.join(root, "home");
   try {

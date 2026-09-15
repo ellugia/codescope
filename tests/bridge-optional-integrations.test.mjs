@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { createBridge, getToolDefinitions, loadConfig, normalizeConfig, toSafeError } from "../src/bridge.mjs";
 
 async function makeRoot() {
-  return await mkdtemp(path.join(os.tmpdir(), "codescope-bridge-optional-"));
+  return await mkdtemp(path.join(await realpath(os.tmpdir()), "codescope-bridge-optional-"));
 }
 
 function restoreEnvironment(previous) {

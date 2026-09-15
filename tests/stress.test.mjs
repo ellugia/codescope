@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -124,7 +124,7 @@ async function assertRejected(bridge, name, args, code) {
 }
 
 test("bounded stress loop keeps persisted allowlists, sessions, cursors, and cleanup deterministic", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "codescope-stress-"));
+  const root = await mkdtemp(path.join(await realpath(os.tmpdir()), "codescope-stress-"));
   const alpha = path.join(root, "alpha");
   const beta = path.join(root, "beta");
   const configPath = path.join(root, "config.json");

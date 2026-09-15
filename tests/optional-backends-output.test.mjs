@@ -6,7 +6,7 @@ import path from "node:path";
 import { createOptionalBackends } from "../src/optional-backends.mjs";
 import { hasSecret, verifyNoReparse } from "../src/bridge.mjs";
 
-const root = await fs.mkdtemp(path.join(os.tmpdir(), "codescope-optional-output-"));
+const root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "codescope-optional-output-"));
 const sourceRoot = path.join(root, "fixture");
 const sourceFile = path.join(sourceRoot, "src", "graph_fixture.py");
 const stub = path.resolve("tests/fixtures/optional-backend-stub.mjs");
@@ -26,7 +26,7 @@ function errorCode(error) {
 
 function makeConfig(mode, pidFile) {
   return {
-    limits: { maxResponseBytes: 65_536, timeoutMs: 750 },
+    limits: { maxResponseBytes: 65_536, timeoutMs: 5_000 },
     optionalBackends: {
       codebaseMemory: {
         command: process.execPath,

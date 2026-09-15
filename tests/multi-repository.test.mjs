@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { spawn } from "node:child_process";
-import { readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 const workspace = resolve(import.meta.dirname, "..");
-const fixtureRoot = join(workspace, "characterization", "multi-repo");
-const repoA = join(fixtureRoot, "repo-a");
-const repoB = join(fixtureRoot, "repo-b");
-const configPath = join(fixtureRoot, `.runtime-${process.pid}.json`);
+let fixtureRoot;
+let repoA;
+let repoB;
+let configPath;
 
 function childEnv() {
   const env = {};
@@ -152,6 +153,14 @@ class McpClient {
 let client;
 
 before(async () => {
+  fixtureRoot = await mkdtemp(join(await realpath(tmpdir()), "codescope-multi-repo-"));
+  repoA = join(fixtureRoot, "repo-a");
+  repoB = join(fixtureRoot, "repo-b");
+  configPath = join(fixtureRoot, "config.json");
+  await mkdir(repoA, { recursive: true });
+  await mkdir(repoB, { recursive: true });
+  await writeFile(join(repoA, "only-a.txt"), "A_ONLY_20260911\n", "utf8");
+  await writeFile(join(repoB, "only-b.txt"), "B_ONLY_20260911\n", "utf8");
   const catalog = {
     repositories: {
       "repo-a": { root: repoA, read_only: true },
@@ -167,7 +176,7 @@ before(async () => {
 
 after(async () => {
   await client?.close();
-  await rm(configPath, { force: true });
+  await rm(fixtureRoot, { recursive: true, force: true });
 });
 
 test("two repository aliases isolate reads and reject unknown or escaping selections", async () => {
