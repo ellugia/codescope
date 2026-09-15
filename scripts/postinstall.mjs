@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const setupCommand = join(packageRoot, "bin", "codescope.mjs");
-const setupHint = `node node_modules/codescope-bridge/bin/codescope.mjs setup`;
+const setupHint = `node node_modules/codescope/bin/codescope.mjs setup`;
 const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY && !process.env.CI);
 
 if (!interactive) {

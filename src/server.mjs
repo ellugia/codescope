@@ -7,7 +7,7 @@ const bridge = createBridge(await loadConfig());
 await bridge.prepare();
 
 const server = new Server(
-  { name: "codescope-bridge", version: "0.1.0" },
+  { name: "codescope", version: "0.1.0" },
   { capabilities: { tools: { listChanged: false } } },
 );
 

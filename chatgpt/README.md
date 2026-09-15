@@ -7,7 +7,7 @@ The main file to paste into a ChatGPT Project's **Instructions** field is
 installation, run this from the installation directory:
 
 ```sh
-node node_modules/codescope-bridge/bin/codescope.mjs instructions
+node node_modules/codescope/bin/codescope.mjs instructions
 ```
 
 If `codescope` is already available as a command, `codescope instructions` is
