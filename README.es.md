@@ -1,6 +1,10 @@
 # CodeScope
 
-CodeScope es un puente MCP local y de solo lectura para inspeccionar repositorios configurados de forma explícita. Ofrece al agente lecturas acotadas del sistema de archivos y de Git sin aceptar rutas arbitrarias, raíces libres ni operaciones de escritura desde la conversación.
+CodeScope te ayuda a aprovechar las conversaciones de ChatGPT y las sesiones de Codex que ya tienes para entender código que permanece en tu propio ordenador. Lo instalas una vez, eliges los repositorios que quieres poner a disposición y haces preguntas en lenguaje natural sobre archivos, historial de Git, estructura y diseño. Tu código sigue siendo local y de solo lectura mientras aprovechas la cuota de uso de ChatGPT y Codex que tengas disponible en tu plan para explorar, revisar y mejorar tus proyectos.
+
+Tanto si estás entrando en un código que no conoces, siguiendo el origen de un error, revisando un cambio o decidiendo cuál es el siguiente trabajo, CodeScope da a la conversación una ventana segura a los repositorios que has elegido sin pedirte que los subas ni conceder permisos de escritura.
+
+Por debajo, CodeScope es un puente MCP local y de solo lectura para inspeccionar repositorios configurados de forma explícita. Ofrece al agente lecturas acotadas del sistema de archivos y de Git sin aceptar rutas arbitrarias, raíces libres ni operaciones de escritura desde la conversación.
 
 [Read this in English](README.md) · [Guía de usuario](docs/user-guide.es.md) · [User guide](docs/user-guide.en.md)
 
@@ -24,14 +28,47 @@ El puente no es un servidor de sistema de archivos general, no ofrece una API de
 
 ## Inicio rápido
 
-Desde un paquete npm instalado:
+Instala el paquete en la carpeta del proyecto actual:
 
 ```sh
 npm install codescope-bridge
-npx codescope init --config ./config.json
 ```
 
-Edita `config.json` y sustituye la raíz de ejemplo por una ruta absoluta de la máquina local. Todos los repositorios deben conservar `read_only` a `true`:
+Esta es la instalación normal. No añadas el modificador `--global`. El
+instalador de npm pregunta si quieres lanzar el setup guiado inmediatamente.
+Responde que sí para guardar la configuración del usuario en la carpeta
+de configuración del sistema: `%APPDATA%\CodeScope` en Windows,
+`~/Library/Application Support/CodeScope` en macOS, o
+`$XDG_CONFIG_HOME/codescope` (normalmente `~/.config/codescope`) en Linux. La
+ruta que muestra la TUI es el archivo que debes editar. Abre la TUI de
+terminal para añadir repositorios y configurar integraciones opcionales. Usa
+`--config ./config.json` o `CODESCOPE_CONFIG` si quieres otra ubicación de
+forma explícita.
+Después de la TUI, el setup pregunta si quieres registrar CodeScope en Codex. El registro
+usa el ejecutable de Node instalado y la ruta absoluta de este paquete local,
+por lo que Codex no necesita que `codescope` esté en el `PATH` del sistema.
+También conserva una entrada `codescope` existente.
+
+Después de instalarlo, configura el proyecto de ChatGPT que utilizará el MCP.
+El paquete muestra un recordatorio durante `npm install`. Con la instalación
+local normal, muestra las instrucciones listas para copiar desde la carpeta de
+la instalación:
+
+```sh
+node node_modules/codescope-bridge/bin/codescope.mjs instructions
+```
+
+Si el comando `codescope` ya está en tu `PATH`, `codescope instructions` es
+equivalente.
+
+Copia la salida en el campo **Instructions** del proyecto de ChatGPT. La fuente
+canónica es [`chatgpt/project-instructions.md`](chatgpt/project-instructions.md).
+Así el agente conoce el flujo recomendado para seleccionar repositorios y
+mostrar la advertencia de seguridad. El bridge sigue imponiendo el acceso por
+sí mismo: estas instrucciones mejoran la interacción, pero no son la barrera
+de seguridad.
+
+Edita el archivo cuya ruta muestra `init` y sustituye la raíz de ejemplo por una ruta absoluta de la máquina local. Todos los repositorios deben conservar `read_only` a `true`:
 
 ```json
 {
@@ -55,7 +92,7 @@ La TUI puede marcar un repositorio configurado con `enabled: false` sin borrarlo
 Arranca el servidor local por stdio:
 
 ```sh
-npx codescope serve --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs serve
 ```
 
 El proceso lee peticiones desde stdio y escribe las respuestas del protocolo en stdout. Los logs operativos van a stderr. El modo local no inicia un túnel, no abre un listener de red y no necesita una API key de OpenAI.
@@ -66,13 +103,12 @@ El paquete incluye una pequeña CLI de Node. Desde un checkout, o después de in
 
 ```sh
 npm install .
-npx codescope init --config ./config.json
-npx codescope serve --config ./config.json
+node bin/codescope.mjs setup
 ```
 
-`init` solo crea una plantilla local y se niega a sustituir un archivo existente salvo que se indique `--force`. `serve` inicia el mismo puente stdio que `node src/server.mjs`.
+`setup` crea la configuración del usuario cuando hace falta y abre la TUI guiada. `init` sigue disponible para una preparación basada en plantilla, y `serve` inicia el mismo puente stdio que `node src/server.mjs`. Pasa `--config ./config.json` si prefieres conservar la configuración junto al proyecto actual.
 
-Para la configuración y el diagnóstico locales interactivos, ejecuta `npx codescope ui --config ./config.json`. La UI gestiona la preparación local; `serve` sigue siendo el puente MCP por stdio.
+Para la configuración y el diagnóstico locales interactivos, ejecuta `node node_modules/codescope-bridge/bin/codescope.mjs ui`. La UI gestiona la preparación local; `serve` sigue siendo el puente MCP por stdio.
 La UI también puede ejecutar `serve` en primer plano para una comprobación local; pulsa `Ctrl+C` para detenerlo. Normalmente el propio cliente MCP es quien arranca `serve`.
 
 El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, evidencias de pruebas, launchers de Windows y contenido real de repositorios.
@@ -80,7 +116,7 @@ El paquete npm excluye deliberadamente `deps/`, perfiles gestionados, cachés, e
 `codex-repositories` es una ayuda de importación para la configuración local:
 
 ```sh
-npx codescope codex-repositories
+node node_modules/codescope-bridge/bin/codescope.mjs codex-repositories
 ```
 
 Lee únicamente `CODEX_HOME/config.toml`. Si `CODEX_HOME` no está definido, comprueba `~/.codex/config.toml` en Linux y macOS, y el `.codex/config.toml` equivalente del directorio de usuario en Windows. Extrae las secciones `[projects.'...']` y `[projects."..."]` como candidatos. El usuario debe elegir qué candidatos copiar a la configuración propia de CodeScope; una entrada de proyecto de Codex nunca concede acceso por sí sola.
@@ -132,7 +168,7 @@ npm run doctor
 
 ## Superficie de comandos local
 
-La CLI de Node y la TUI de terminal son la superficie local soportada en Windows, Linux y macOS. Usa `npx codescope ...` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. Los launchers de PowerShell, los scripts de túnel y la autenticación remota quedan fuera de esta release.
+La CLI de Node y la TUI de terminal son la superficie local soportada en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/codescope-bridge/bin/codescope.mjs <comando>` para la configuración manual, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`. Los launchers de PowerShell, los scripts de túnel y la autenticación remota quedan fuera de esta release.
 
 ## Estado del proyecto
 

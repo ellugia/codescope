@@ -9,6 +9,7 @@ import {
   aliasForPath,
   decodeKey,
   removeRepository,
+  renderMenu,
   setRepositoryEnabled,
   writeUiConfig,
 } from "../src/tui.mjs";
@@ -17,9 +18,20 @@ import { normalizeConfig } from "../src/bridge.mjs";
 test("TUI key decoder and alias generation stay deterministic", () => {
   assert.equal(decodeKey("\u001b[A"), "up");
   assert.equal(decodeKey("\u001b[B"), "down");
+  assert.equal(decodeKey("k"), "up");
+  assert.equal(decodeKey("j"), "down");
   assert.equal(decodeKey("\r"), "select");
   assert.equal(decodeKey("q"), "back");
   assert.equal(aliasForPath("/work/My Repo"), "my-repo");
+});
+
+test("TUI rendering exposes hierarchy, status, selection, and keyboard help", () => {
+  const output = renderMenu("Local configuration", ["First", "Second"], 1, "Repository removed.");
+  assert.match(output, /CodeScope/u);
+  assert.match(output, /Local read-only bridge configuration/u);
+  assert.match(output, /Status · Repository removed\./u);
+  assert.match(output, /\u001b\[36m❯\u001b\[0m \u001b\[1mSecond\u001b\[0m/u);
+  assert.match(output, /↑\/↓ or j\/k Move · Enter Select · Esc\/q Back · Ctrl\+C Quit/u);
 });
 
 test("TUI repository changes persist read-only entries and leave one active repository", async () => {
@@ -31,7 +43,7 @@ test("TUI repository changes persist read-only entries and leave one active repo
   await fs.mkdir(first);
   await fs.mkdir(second);
   const config = { default_repository: "first", repositories: { first: { root: first, read_only: true }, second: { root: second, read_only: true } } };
-  await addRepository(config, join(root, "third"), "third").catch((error) => assert.match(error.message, /no existe/));
+  await addRepository(config, join(root, "third"), "third").catch((error) => assert.match(error.message, /does not exist/u));
   setRepositoryEnabled(config, "second", false);
   assert.deepEqual(activeAliases(config), ["first"]);
   await writeUiConfig(configPath, config);
@@ -40,6 +52,13 @@ test("TUI repository changes persist read-only entries and leave one active repo
   assert.deepEqual(Object.keys(normalized.repositories), ["first"]);
   removeRepository(config, "second");
   assert.equal(config.repositories.second, undefined);
+
+  const defaultFallback = { default_repository: "first", repositories: {
+    first: { root: first, read_only: true },
+    second: { root: second, read_only: true },
+  } };
+  setRepositoryEnabled(defaultFallback, "first", false);
+  assert.equal(defaultFallback.default_repository, "second");
 });
 
 test("bridge rejects a configuration with every repository disabled", () => {

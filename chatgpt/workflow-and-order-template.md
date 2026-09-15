@@ -29,7 +29,7 @@ Describe the behavior to inspect or change in one sentence.
 
 - No writes, commits, checkout, reset, index changes, reindexing, or backend management.
 - No unapproved roots, projects, worktrees, resources, prompts, sampling, or elicitation.
-- No credentials, environment files, private keys, tokens, raw logs, or local absolute paths in the answer.
+- No credentials, environment files, private keys, tokens, raw logs, or filesystem locations in the answer.
 
 ### Evidence required
 
@@ -48,4 +48,4 @@ Report:
 4. Tests run and any environmental limitation.
 5. Remaining risk or decision required before publication.
 
-Keep the explanation accessible and in the user's language. Do not turn a historical record into a claim about current production.
+Keep the explanation accessible and in the user's language. Tie conclusions to current evidence and state uncertainty plainly.

@@ -2,7 +2,7 @@
   "name": "codescope-bridge",
   "version": "0.1.0",
   "private": false,
-  "description": "Read-only local MCP bridge for explicitly configured repositories.",
+  "description": "Use ChatGPT and Codex to understand selected local repositories through a read-only MCP bridge.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ellugia/codescope.git"
@@ -12,7 +12,6 @@
     "codescope": "bin/codescope.mjs"
   },
   "files": [
-    "AGENTS.md",
     "README.md",
     "README.es.md",
     "bin/",
@@ -22,6 +21,7 @@
     "docs/user-guide.en.md",
     "docs/user-guide.es.md",
     "scripts/doctor.mjs",
+    "scripts/postinstall.mjs",
     "scripts/self-check.mjs",
     "src/"
   ],
@@ -33,7 +33,9 @@
     "cli": "node bin/codescope.mjs",
     "check": "node scripts/self-check.mjs",
     "doctor": "node scripts/doctor.mjs",
-    "baseline": "node scripts/capture-baseline.mjs"
+    "baseline": "node scripts/capture-baseline.mjs",
+    "stress": "node tests/stress.test.mjs",
+    "postinstall": "node scripts/postinstall.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

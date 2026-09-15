@@ -1,38 +1,53 @@
 # CodeScope user guide
 
-This guide describes the public-facing workflow. Host-specific validation records and managed local profiles are maintainer material and are not part of this guide.
+This guide explains the supported public workflow.
 
 ## 1. Configure repositories
 
-Copy `config.example.json` to `config.json` and give every repository a short alias, an absolute root, and `read_only: true`. The alias is the only repository selector accepted by MCP calls. The bridge rejects a path or project supplied as a free-form root.
+Install `codescope-bridge` in the current project with npm:
 
-Keep `config.json` outside version control when it contains local paths. Set `CODESCOPE_CONFIG` to its absolute path before starting the server.
+```sh
+npm install codescope-bridge
+```
+
+The installer asks whether to launch the guided setup immediately; answering yes creates the user configuration and opens the terminal UI. Add every repository with a short alias, its repository folder, and `read_only: true`. The alias is the only repository selector accepted by MCP calls. The bridge rejects a path or project supplied as a free-form root. After the TUI, setup can register CodeScope in Codex; it never replaces an existing `codescope` entry.
+
+Use `--config <file>` or `CODESCOPE_CONFIG` when you need a custom configuration file. Keep that file private when it contains machine-specific settings.
 
 The terminal UI can disable a repository with `enabled: false` while retaining its entry for later reactivation. The bridge exposes only enabled entries and always requires `read_only: true`.
 
 ## 2. Start the bridge
 
+The normal npm installation is local. For manual commands in this guide, use
+the package entrypoint below from the installation directory:
+
 ```sh
-npx codescope serve --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs <command>
+```
+
+If `codescope` is already on your `PATH`, its shorter form is equivalent.
+
+```sh
+node node_modules/codescope-bridge/bin/codescope.mjs serve
 ```
 
 The server uses stdio. Connect it from an MCP client that can launch local stdio servers. Do not add a public HTTP listener to the bridge to work around a client limitation.
 
-The npm CLI provides the same flow without relying on a vendored runtime:
+For scripted setup without the UI, the npm CLI also provides:
 
 ```sh
-npx codescope init --config ./config.json
-npx codescope serve --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs init
+node node_modules/codescope-bridge/bin/codescope.mjs serve
 ```
 
-Local mode does not require a tunnel client or an OpenAI API key. The package contains no vendored runtime, managed profile, local cache, or Windows launcher.
+Local mode works without an extra service or API credential. The package provides the supported Node CLI and terminal UI directly.
 
-The Node CLI and terminal UI are the supported local interface on Windows, Linux, and macOS. Use `npx codescope ...` for setup, serving, diagnostics, and Codex repository discovery. PowerShell launchers and tunnel scripts are outside this release.
+The Node CLI and terminal UI are the supported interface on Windows, Linux, and macOS. With the normal local install, use `node node_modules/codescope-bridge/bin/codescope.mjs <command>` for setup, serving, diagnostics, and Codex repository discovery. The shorter `codescope <command>` form is equivalent when the package bin is on your `PATH`.
 
 For interactive local configuration and diagnostics, run:
 
 ```sh
-npx codescope ui --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs ui
 ```
 
 The UI manages local setup and diagnostics; `serve` remains the MCP stdio bridge.
@@ -40,7 +55,7 @@ The UI can also run `serve` in the foreground for a local smoke check; press `Ct
 
 ## 3. Import candidates from Codex
 
-`npx codescope codex-repositories` reads `CODEX_HOME/config.toml`, or `~/.codex/config.toml` when the variable is not set. It extracts Codex `[projects.'...']` and `[projects."..."]` entries and prints candidate folders. This is only a discovery list: the user must select candidates and copy them into CodeScope's own configuration. CodeScope never treats Codex's project list as authorization.
+`node node_modules/codescope-bridge/bin/codescope.mjs codex-repositories` reads the Codex configuration, extracts its project entries, and prints candidate folders. This is only a discovery list: the user must select candidates and copy them into CodeScope's own configuration. CodeScope never treats Codex's project list as authorization.
 
 ## 4. Select the repository for a conversation
 
@@ -62,17 +77,16 @@ Ponytail instructions are advisory and optional. Their absence must not disable 
 
 ## 7. Security rules for the agent
 
-- Never ask the bridge to read a repository root, absolute path, `.git` directory, environment file, credential, private key, certificate, or token file.
+- Never ask the bridge to read outside a configured repository or to read `.git`, environment files, credentials, private keys, certificates, or token files.
 - Never request writes, commits, checkout, reset, index changes, reindexing, or backend management operations.
 - Never invent an alias, session ID, project name, root, revision, or optional-backend binding.
-- Do not expose local absolute paths, process IDs, credentials, or internal validation artifacts in the user-facing answer.
+- Do not expose filesystem locations, process IDs, credentials, or test artifacts in the user-facing answer.
 - Distinguish observed tool output, inference, and blocked or untested behavior.
 - Keep the conversation in the user’s language. These English instructions do not override the user’s language.
 
 ## 8. Troubleshooting
 
-- `config_missing`: pass `--config`, set `CODESCOPE_CONFIG`, or place a local `config.json` in the current working directory.
+- `config_missing`: run `node node_modules/codescope-bridge/bin/codescope.mjs setup` from the installation directory. You can also pass `--config` or set `CODESCOPE_CONFIG`. An existing `config.json` in the current working directory is still supported for compatibility.
 - `repository_access_required` or `session_required`: select a configured alias in the current session.
 - `path_denied` or `secret_denied`: the requested path or content is outside the public read policy.
 - `backend_unavailable`: the optional backend is absent, disabled, or not bound to this repository.
-- A test that says `BRIDGE_COMMAND` is missing is a harness configuration issue; it is not evidence that the bridge security test passed.

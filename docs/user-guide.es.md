@@ -1,38 +1,53 @@
 # Guía de usuario de CodeScope
 
-Esta guía describe el flujo público. Los recibos de validación ligados a una máquina y los perfiles locales gestionados son material de mantenimiento y no forman parte de esta guía.
+Esta guía explica el flujo público admitido.
 
 ## 1. Configurar repositorios
 
-Copia `config.example.json` como `config.json` y asigna a cada repositorio un alias corto, una raíz absoluta y `read_only: true`. El alias es el único selector de repositorio que aceptan las llamadas MCP. El puente rechaza una raíz o un proyecto enviados como ruta libre.
+Instala `codescope-bridge` en la carpeta del proyecto actual con npm:
 
-Mantén `config.json` fuera del control de versiones si contiene rutas locales. Define `CODESCOPE_CONFIG` con su ruta absoluta antes de arrancar el servidor.
+```sh
+npm install codescope-bridge
+```
+
+El instalador pregunta si quieres lanzar el setup guiado inmediatamente; si respondes que sí, crea la configuración del usuario y abre la TUI. Añade cada repositorio con un alias corto, su carpeta y `read_only: true`. El alias es el único selector de repositorio que aceptan las llamadas MCP. El puente rechaza una raíz o un proyecto enviados como ruta libre. Después de la TUI, el setup puede registrar CodeScope en Codex; nunca sustituye una entrada `codescope` existente.
+
+Usa `--config <archivo>` o `CODESCOPE_CONFIG` si necesitas un archivo de configuración personalizado. Mantén ese archivo privado cuando contenga ajustes propios de tu máquina.
 
 La TUI puede desactivar un repositorio con `enabled: false` y conservar su entrada para volver a activarlo. El puente solo expone las entradas activas y siempre exige `read_only: true`.
 
 ## 2. Arrancar el puente
 
+La instalación normal de npm es local. Para los comandos manuales de esta
+guía, usa desde la carpeta de instalación la entrada del paquete:
+
 ```sh
-npx codescope serve --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs <comando>
+```
+
+Si `codescope` ya está en tu `PATH`, la forma abreviada es equivalente.
+
+```sh
+node node_modules/codescope-bridge/bin/codescope.mjs serve
 ```
 
 El servidor usa stdio. Conéctalo desde un cliente MCP que pueda arrancar servidores stdio locales. No añadas un listener HTTP público para solucionar una limitación del cliente.
 
-La CLI de npm ofrece el mismo flujo sin depender de un runtime vendorizado:
+Para una preparación basada en scripts y sin TUI, la CLI de npm también ofrece:
 
 ```sh
-npx codescope init --config ./config.json
-npx codescope serve --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs init
+node node_modules/codescope-bridge/bin/codescope.mjs serve
 ```
 
-El modo local no necesita un cliente de túnel ni una API key de OpenAI. El paquete no contiene un runtime vendorizado, un perfil gestionado, una caché local ni un launcher de Windows.
+El modo local funciona sin un servicio adicional ni credenciales de API. El paquete incluye directamente la CLI de Node y la TUI admitidas.
 
-La CLI de Node y la TUI de terminal son la interfaz local soportada en Windows, Linux y macOS. Usa `npx codescope ...` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. Los launchers de PowerShell y los scripts de túnel quedan fuera de esta release.
+La CLI de Node y la TUI de terminal son la interfaz admitida en Windows, Linux y macOS. Con la instalación local normal, usa `node node_modules/codescope-bridge/bin/codescope.mjs <comando>` para la configuración, el servidor, el diagnóstico y el descubrimiento de repositorios de Codex. La forma abreviada `codescope <comando>` es equivalente cuando el bin está en tu `PATH`.
 
 Para la configuración y el diagnóstico locales interactivos, ejecuta:
 
 ```sh
-npx codescope ui --config ./config.json
+node node_modules/codescope-bridge/bin/codescope.mjs ui
 ```
 
 La UI gestiona la preparación y el diagnóstico locales; `serve` sigue siendo el puente MCP por stdio.
@@ -40,7 +55,7 @@ La UI también puede ejecutar `serve` en primer plano para una comprobación loc
 
 ## 3. Importar candidatos desde Codex
 
-`npx codescope codex-repositories` lee `CODEX_HOME/config.toml` o, si la variable no está definida, `~/.codex/config.toml`. Extrae las secciones `[projects.'...']` y `[projects."..."]` y muestra carpetas candidatas. Es solo una lista de descubrimiento: el usuario debe elegir los candidatos y copiarlos a la configuración propia de CodeScope. CodeScope nunca convierte por sí solo la lista de proyectos de Codex en autorización.
+`node node_modules/codescope-bridge/bin/codescope.mjs codex-repositories` lee la configuración de Codex, extrae sus proyectos y muestra carpetas candidatas. Es solo una lista de descubrimiento: el usuario debe elegir los candidatos y copiarlos a la configuración propia de CodeScope. CodeScope nunca convierte por sí solo la lista de proyectos de Codex en autorización.
 
 ## 4. Seleccionar el repositorio de una conversación
 
@@ -62,17 +77,16 @@ Las instrucciones de Ponytail son advisory y opcionales. Su ausencia no debe des
 
 ## 7. Reglas de seguridad para el agente
 
-- Nunca pidas leer la raíz del repositorio, una ruta absoluta, `.git`, un archivo de entorno, credenciales, claves privadas, certificados o archivos de tokens.
+- Nunca pidas leer fuera de un repositorio configurado ni `.git`, archivos de entorno, credenciales, claves privadas, certificados o archivos de tokens.
 - Nunca solicites escrituras, commits, checkout, reset, cambios del índice, reindexado u operaciones de administración de backends.
 - Nunca inventes un alias, ID de sesión, nombre de proyecto, raíz, revisión o vínculo de backend opcional.
-- No muestres en la respuesta rutas absolutas locales, PIDs, credenciales ni artefactos internos de validación.
+- No muestres en la respuesta ubicaciones del sistema, PIDs, credenciales ni artefactos de pruebas.
 - Separa los datos observados por las herramientas, las inferencias y lo bloqueado o no probado.
 - Mantén la conversación en el idioma del usuario. Estas instrucciones en inglés no cambian el idioma del usuario.
 
 ## 8. Diagnóstico
 
-- `config_missing`: pasa `--config`, define `CODESCOPE_CONFIG` o coloca un `config.json` local en el directorio de trabajo actual.
+- `config_missing`: ejecuta `node node_modules/codescope-bridge/bin/codescope.mjs setup` desde la carpeta de instalación. También puedes pasar `--config` o definir `CODESCOPE_CONFIG`. Se sigue admitiendo por compatibilidad un `config.json` existente en el directorio de trabajo actual.
 - `repository_access_required` o `session_required`: selecciona un alias configurado en la sesión actual.
 - `path_denied` o `secret_denied`: la ruta o el contenido pedido queda fuera de la política de lectura pública.
 - `backend_unavailable`: el backend opcional falta, está desactivado o no está vinculado a este repositorio.
-- Si una prueba indica que falta `BRIDGE_COMMAND`, es un problema de configuración del harness; no demuestra que la prueba de seguridad del puente haya pasado.

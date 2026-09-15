@@ -12,6 +12,7 @@ import {
 } from "./optional-backends.mjs";
 import { DESIGN_GUIDANCE_THEMES, getDesignGuidance } from "./design-guidance.mjs";
 import { discoverOptionalIntegrations, DISCOVERY_POLICY } from "./optional-discovery.mjs";
+import { resolveConfigPath } from "./config-paths.mjs";
 
 const LEGACY_CONTEXT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../characterization/ctx-test");
 
@@ -297,8 +298,8 @@ function aliasSchema() {
   return { type: "string", pattern: ALIAS_RE.source };
 }
 
-export async function loadConfig(configPath = process.env.CODESCOPE_CONFIG) {
-  const selected = configPath || path.resolve(process.cwd(), "config.json");
+export async function loadConfig(configPath) {
+  const selected = resolveConfigPath({ explicitPath: configPath });
   let raw;
   try {
     raw = JSON.parse(await fs.readFile(selected, "utf8"));

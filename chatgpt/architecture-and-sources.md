@@ -6,13 +6,13 @@ This document is model-facing reference material. It is intentionally written in
 
 The MCP server is a local stdio process. `src/server.mjs` owns transport and protocol handling. `src/bridge.mjs` owns the positive tool allowlist, configuration normalization, repository alias resolution, session access, path checks, secret filtering, bounded output, signed cursors, and Git invocation. `src/optional-backends.mjs` adapts explicitly bound optional integrations and keeps their results read-only and filtered. `src/optional-discovery.mjs` performs inspection-only installation discovery.
 
-Local stdio is the only supported transport in this release. The bridge does not expose a public listener or depend on a remote tunnel.
+Local stdio is the only supported transport in this release. The bridge does not expose a public listener.
 
-The Node UI command (`npx codescope ui`) manages local configuration and diagnostics. `npx codescope serve` remains the MCP stdio bridge.
+The Node CLI manages local configuration and diagnostics; `serve` remains the MCP stdio bridge. With the normal local install, invoke it as `node node_modules/codescope-bridge/bin/codescope.mjs <command>` from the installation directory. The shorter `codescope <command>` form is equivalent when the package bin is on `PATH`.
 
 ## Configuration flow
 
-1. `loadConfig` reads the path from `CODESCOPE_CONFIG` or the local `config.json`.
+1. `loadConfig` honors an explicit path and `CODESCOPE_CONFIG`, then uses an existing platform user configuration, an existing local `config.json` for compatibility, or the platform user configuration path for a new setup.
 2. `normalizeConfig` requires absolute repository roots and `read_only: true`, validates limits, and normalizes optional repository bindings.
 3. `attachOptionalDiscovery` may add validated optional installations without starting them or reading credentials.
 4. A bridge call validates the tool name, arguments, session, and selected alias before resolving a canonical repository root.
@@ -35,7 +35,7 @@ Ponytail is an optional source of advisory instructions. `design_guidance` is th
 
 ## Evidence discipline
 
-Use the active tool result as the source of truth. Label untested integrations, unavailable installations, stale metadata, and environmental test blocks explicitly. Do not use historical validation records, host snapshots, local configuration files, or managed runtime profiles as proof of a current public deployment.
+Use the active tool result as the source of truth. Label untested integrations, unavailable installations, stale metadata, and environmental test blocks explicitly. Tie each claim to current evidence and state uncertainty plainly.
 
 ## Relevant files
 
@@ -48,4 +48,4 @@ Use the active tool result as the source of truth. Label untested integrations, 
 - `config.example.json`: safe configuration shape with optional backends disabled.
 - `docs/user-guide.en.md` and `docs/user-guide.es.md`: public user documentation.
 
-Do not expose internal fixtures, machine-specific profiles, credentials, process IDs, or historical evidence in model responses.
+Do not expose fixtures, machine-specific profiles, credentials, process IDs, or test output in model responses.

@@ -88,14 +88,22 @@ test("accepts both project key quote styles and deduplicates paths", () => {
   assert.deepEqual(parseCodexProjectPaths(contents), [repository]);
 });
 
-test("CLI config precedence is --config, then CODESCOPE_CONFIG, then the cwd default", async () => {
+function isolatedUserConfigEnvironment(root) {
+  const environment = { ...process.env };
+  delete environment.CODESCOPE_CONFIG;
+  if (process.platform === "win32") environment.APPDATA = path.join(root, "appdata");
+  else if (process.platform === "darwin") environment.HOME = path.join(root, "home");
+  else environment.XDG_CONFIG_HOME = path.join(root, "xdg");
+  return environment;
+}
+
+test("CLI config precedence is --config, then CODESCOPE_CONFIG, then the user default", async () => {
   const root = await tempRoot();
   try {
     const environmentConfig = path.join(root, "from-environment.json");
     const flagConfig = path.join(root, "from-flag.json");
     const environment = { ...process.env, CODESCOPE_CONFIG: environmentConfig };
-    const withoutConfig = { ...process.env };
-    delete withoutConfig.CODESCOPE_CONFIG;
+    const withoutConfig = isolatedUserConfigEnvironment(root);
 
     const fromEnvironment = await spawnFile(process.execPath, [cli, "init"], { env: environment });
     assert.equal(fromEnvironment.status, 0);
@@ -107,7 +115,12 @@ test("CLI config precedence is --config, then CODESCOPE_CONFIG, then the cwd def
 
     const fromDefault = await spawnFile(process.execPath, [cli, "init"], { cwd: root, env: withoutConfig });
     assert.equal(fromDefault.status, 0);
-    await access(path.join(root, "config.json"));
+    const defaultConfig = process.platform === "win32"
+      ? path.join(root, "appdata", "CodeScope", "config.json")
+      : process.platform === "darwin"
+        ? path.join(root, "home", "Library", "Application Support", "CodeScope", "config.json")
+        : path.join(root, "xdg", "codescope", "config.json");
+    await access(defaultConfig);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
