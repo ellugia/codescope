@@ -148,11 +148,11 @@ These controls are enforced by the bridge. MCP annotations such as `readOnlyHint
 ## Checks
 
 ```sh
-npm run check
-npm run doctor
+node scripts/self-check.mjs
+node scripts/doctor.mjs
 ```
 
-`npm run check` creates and removes disposable test data and verifies filesystem, Git, cursor, limit, secret, and MCP-surface invariants. `npm run doctor` checks the configured repositories without starting another service. Tests that exercise a separately launched bridge require `BRIDGE_COMMAND` and `BRIDGE_ARGS_JSON`; an unset harness is reported as blocked rather than silently passing.
+`scripts/self-check.mjs` creates and removes disposable test data and verifies filesystem, Git, cursor, limit, secret, and MCP-surface invariants. `scripts/doctor.mjs` checks the configured repositories without starting another service. Tests that exercise a separately launched bridge require `BRIDGE_COMMAND` and `BRIDGE_ARGS_JSON`; an unset harness is reported as blocked rather than silently passing.
 
 ## Local command surface
 

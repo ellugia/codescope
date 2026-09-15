@@ -147,11 +147,11 @@ Estos controles los aplica el puente. Las anotaciones MCP como `readOnlyHint` so
 ## Comprobaciones
 
 ```sh
-npm run check
-npm run doctor
+node scripts/self-check.mjs
+node scripts/doctor.mjs
 ```
 
-`npm run check` crea y elimina datos de prueba desechables y comprueba filesystem, Git, cursores, límites, secretos y superficie MCP. `npm run doctor` revisa los repositorios configurados sin iniciar otro servicio. Las pruebas que arrancan un bridge aparte requieren `BRIDGE_COMMAND` y `BRIDGE_ARGS_JSON`; si falta el harness se informa como bloqueado, no como un falso verde.
+`scripts/self-check.mjs` crea y elimina datos de prueba desechables y comprueba filesystem, Git, cursores, límites, secretos y superficie MCP. `scripts/doctor.mjs` revisa los repositorios configurados sin iniciar otro servicio. Las pruebas que arrancan un bridge aparte requieren `BRIDGE_COMMAND` y `BRIDGE_ARGS_JSON`; si falta el harness se informa como bloqueado, no como un falso verde.
 
 ## Superficie de comandos local
 
